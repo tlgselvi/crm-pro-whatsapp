@@ -7,8 +7,9 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 });
 
-const nextConfig: NextConfig = {
+const nextConfig: any = {
   output: 'standalone',
+  turbopack: {},
 };
 
 export default withPWA(nextConfig);
