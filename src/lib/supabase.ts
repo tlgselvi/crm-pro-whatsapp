@@ -17,6 +17,8 @@ export interface Contact {
   phone: string;
   email?: string;
   stage: string;
+  owner_id?: string;
+  assigned_to?: string;
   created_at: string;
   updated_at: string;
 }
@@ -42,12 +44,47 @@ export interface Message {
   media_type?: string;
 }
 
-export interface Broadcast {
+export interface Task {
   id: string;
+  contact_id: string;
+  due_date: string;
+  status: 'pending' | 'completed';
+  note?: string;
+  assigned_to?: string;
+  created_at: string;
+}
+
+export interface Campaign {
+  id: number;
   name: string;
-  content: string;
-  target_stage: string;
-  status: string;
+  template_name: string;
+  status: 'draft' | 'sending' | 'completed' | 'failed';
+  target_count: number;
+  sent_count: number;
+  created_at: string;
+}
+
+export interface AiSettings {
+  id: string;
+  company_name: string;
+  tone: 'professional' | 'friendly' | 'formal';
+  system_instructions?: string;
+  created_at: string;
+}
+
+export interface Form {
+  id: string;
+  title: string;
+  settings: any;
+  created_at: string;
+}
+
+export interface Profile {
+  id: string;
+  email?: string;
+  full_name?: string;
+  avatar_url?: string;
+  role: 'admin' | 'agent';
   created_at: string;
 }
 

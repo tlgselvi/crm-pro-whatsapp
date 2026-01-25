@@ -25,8 +25,6 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
 
-        console.log('Incoming webhook:', JSON.stringify(body, null, 2));
-
         // Extract message data from WhatsApp webhook payload
         const entry = body.entry?.[0];
         const changes = entry?.changes?.[0];
@@ -141,8 +139,6 @@ export async function POST(request: NextRequest) {
         const autoReply = checkSalesbotRules(messageBody);
 
         if (autoReply) {
-            console.log('Salesbot triggered! Auto-replying...');
-
             // Save bot response to database
             await supabase.from('messages').insert({
                 conversation_id: conversation.id,
@@ -155,7 +151,6 @@ export async function POST(request: NextRequest) {
             // Send response via WhatsApp (if credentials configured)
             try {
                 await sendWhatsAppMessage(from, autoReply);
-                console.log('Salesbot auto-reply sent successfully');
             } catch (whatsappError) {
                 console.error('WhatsApp send failed (credentials missing?):', whatsappError);
                 // Continue even if WhatsApp send fails - message saved to DB

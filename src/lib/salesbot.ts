@@ -5,6 +5,7 @@ interface BotRule {
     autoReply: boolean;
 }
 
+// TODO: Move these rules to Supabase 'bot_rules' table for production extensibility
 const SALESBOT_RULES: BotRule[] = [
     {
         keywords: ['merhaba', 'selam', 'hey', 'hi', 'hello'],
@@ -19,7 +20,6 @@ const SALESBOT_RULES: BotRule[] = [
 ⭐ Profesyonel Paket: ₺2,499/ay  
 🚀 Kurumsal Paket: Özel fiyat
 
-Detaylı bilgi için: info@crmpro.com
 Hemen başlamak ister misiniz?`,
         autoReply: true,
     },
@@ -45,9 +45,8 @@ Hangi ürün hakkında detay istersiniz?`,
         keywords: ['destek', 'yardım', 'help', 'support'],
         response: `💬 Destek Kanallarımız:
 
-📧 Email: support@crmpro.com
-💬 WhatsApp: +90 555 123 4567
-🌐 Web: crmpro.com/support
+📧 Email: ${process.env.NEXT_PUBLIC_SUPPORT_EMAIL || 'support@yourdomain.com'}
+🌐 Web: ${process.env.NEXT_PUBLIC_SUPPORT_URL || 'yourdomain.com/support'}
 
 Ortalama yanıt süresi: 2 saat
 Size nasıl yardımcı olabilirim?`,

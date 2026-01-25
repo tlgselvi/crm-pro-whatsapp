@@ -6,7 +6,6 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 export async function POST(request: NextRequest) {
     try {
         const { lastMessage, customerName } = await request.json();
-        console.log('AI Suggest Request:', { lastMessage, customerName, hasKey: !!GEMINI_API_KEY });
 
         if (!GEMINI_API_KEY) {
             console.error('AI Suggest Error: Gemini API key is missing');
