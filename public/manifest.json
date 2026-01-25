@@ -1,0 +1,16 @@
+{
+    "name": "CRM Pro - WhatsApp CRM",
+    "short_name": "CRM Pro",
+    "description": "Enterprise WhatsApp CRM & Sales Bot",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#1890ff",
+    "icons": [
+        {
+            "src": "/favicon.ico",
+            "sizes": "64x64 32x32 24x24 16x16",
+            "type": "image/x-icon"
+        }
+    ]
+}

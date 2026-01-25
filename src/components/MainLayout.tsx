@@ -13,6 +13,7 @@ import {
     ProjectOutlined,
     RobotOutlined,
     SoundOutlined,
+    TeamOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -51,19 +52,14 @@ const items: MenuItemType[] = [
         label: 'Satış Botu',
     },
     {
-        key: '/broadcasting',
+        key: '/marketing',
         icon: <SoundOutlined />,
-        label: 'Toplu Mesaj',
+        label: 'Pazarlama',
     },
     {
         key: '/contacts',
         icon: <UserOutlined />,
         label: 'Rehber',
-    },
-    {
-        key: '/test-whatsapp',
-        icon: <WhatsAppOutlined />,
-        label: 'WhatsApp Test',
     },
     {
         key: '/settings',
@@ -79,6 +75,11 @@ const items: MenuItemType[] = [
         key: '/settings/forms',
         icon: <ProjectOutlined />,
         label: 'Formlar',
+    },
+    {
+        key: '/settings/team',
+        icon: <TeamOutlined />,
+        label: 'Takım',
     },
 ];
 

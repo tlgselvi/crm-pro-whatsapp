@@ -11,6 +11,7 @@ const { TextArea } = Input;
 export default function AiSettingsPage() {
     const [settingsForm] = Form.useForm();
     const [kbForm] = Form.useForm();
+    const [magicForm] = Form.useForm();
     const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const [kbData, setKbData] = useState<any[]>([]);
@@ -99,6 +100,31 @@ export default function AiSettingsPage() {
         }
     };
 
+    const generateMagicPersona = async (values: any) => {
+        setLoading(true);
+        try {
+            const response = await fetch('/api/generate-persona', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: values.description }),
+            });
+
+            if (!response.ok) throw new Error('Üretim başarısız oldu');
+
+            const data = await response.json();
+            if (data.success) {
+                message.success('Bot kişiliği ve Bilgi Bankası başarıyla oluşturuldu!');
+                await fetchSettings();
+                await fetchKnowledgeBase();
+                magicForm.resetFields();
+            }
+        } catch (error: any) {
+            message.error('Hata: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const kbColumns = [
         { title: 'Konu', dataIndex: 'topic', key: 'topic', width: '30%' },
         { title: 'İçerik', dataIndex: 'content', key: 'content' },
@@ -114,10 +140,42 @@ export default function AiSettingsPage() {
 
     return (
         <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ marginBottom: 24 }}>
-                <Title level={2}><RobotOutlined /> AI Eğitim Merkezi</Title>
-                <Paragraph>Botun şirketini daha iyi tanıması için ayarları yap ve bilgi bankasını doldur.</Paragraph>
+            <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                    <Title level={2}><RobotOutlined /> AI Eğitim Merkezi</Title>
+                    <Paragraph>Botun şirketini daha iyi tanıması için ayarları yap ve bilgi bankasını doldur.</Paragraph>
+                </div>
+                <Badge status="processing" text="Gemini-2.0 Destekli" />
             </div>
+
+            <Card
+                title={<span><PlusOutlined /> Sihirli Değnek (Otomatik Bot Eğitimi)</span>}
+                style={{ marginBottom: 24, border: '2px solid #1890ff' }}
+                styles={{ header: { background: '#e6f7ff' } }}
+            >
+                <Paragraph type="secondary">
+                    İşletmenizi veya web sitenizi kısaca anlatın, AI sizin için en uygun bot kişiliğini ve 5 adet Sıkça Sorulan Soru'yu hazırlasın.
+                </Paragraph>
+                <Form form={magicForm} onFinish={generateMagicPersona} layout="inline">
+                    <Form.Item
+                        name="description"
+                        rules={[{ required: true, message: 'Lütfen bir açıklama yazın' }]}
+                        style={{ flex: 1 }}
+                    >
+                        <Input placeholder="Örn: Kadıköy'de 3. nesil butik kahveciyiz veya www.sitemiz.com" />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            htmlType="submit"
+                            loading={loading}
+                        >
+                            {loading ? 'Sektörünüz Analiz Ediliyor...' : 'Otomatik Oluştur'}
+                        </Button>
+                    </Form.Item>
+                </Form>
+            </Card>
 
             <Tabs defaultActiveKey="1" items={[
                 {
