@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ConfigProvider, App } from "antd";
 import MainLayout from "@/components/MainLayout";
 import "./globals.css";
@@ -7,8 +7,13 @@ export const metadata: Metadata = {
   title: "CRM Pro - WhatsApp Business",
   description: "Free-tier CRM system with WhatsApp integration",
   manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
   themeColor: "#1890ff",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
 };
 
 export default function RootLayout({

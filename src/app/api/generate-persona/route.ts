@@ -53,14 +53,22 @@ export async function POST(request: NextRequest) {
         if (!response.ok) throw new Error('Gemini API request failed');
 
         const gData = await response.json();
-        const persona = JSON.parse(gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}');
+        let rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+        // Clean markdown if present
+        rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        const persona = JSON.parse(rawText);
 
         // 💾 SAVE TO DATABASE
         // 1. Update AI Settings
+        const { data: existingSettings } = await supabase.from('ai_settings').select('id').limit(1);
+        const settingsId = existingSettings?.[0]?.id;
+
         const { error: settingsError } = await supabase
             .from('ai_settings')
             .upsert({
-                id: (await supabase.from('ai_settings').select('id').single()).data?.id || undefined,
+                id: settingsId,
                 company_name: description.split(' ')[0], // Best guess for name
                 tone: persona.tone,
                 system_instructions: persona.system_prompt

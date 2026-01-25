@@ -9,7 +9,8 @@ const withPWA = require('next-pwa')({
 
 const nextConfig: any = {
   output: 'standalone',
-  turbopack: {},
+  // Next.js 16 compatibility: next-pwa requires webpack. 
+  // We remove turbopack config to allow standard webpack plugins to run.
 };
 
 export default withPWA(nextConfig);
