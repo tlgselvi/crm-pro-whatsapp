@@ -50,6 +50,11 @@ const items: MenuItemType[] = [
         label: 'Contacts',
     },
     {
+        key: '/test-whatsapp',
+        icon: <WhatsAppOutlined />,
+        label: 'Test WhatsApp',
+    },
+    {
         key: '/settings',
         icon: <SettingOutlined />,
         label: 'Settings',
