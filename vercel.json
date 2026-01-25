@@ -1,0 +1,8 @@
+{
+  "functions": [
+    {
+      "source": "api/whatsapp-webhook/**",
+      "maxDuration": 10
+    }
+  ]
+}
