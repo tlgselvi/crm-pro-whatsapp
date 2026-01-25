@@ -56,21 +56,6 @@ export async function POST(request: NextRequest) {
             }
         );
 
-        // 🛡️ FALLBACK LOGIC: If 2.5 Pro hits quota (429), try 1.5 Flash
-        if (response.status === 429) {
-            console.warn('Gemini 2.5 Pro quota hit. Falling back to 1.5 Flash...');
-            response = await fetch(
-                `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-                {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: prompt }] }],
-                        generationConfig: { response_mime_type: "application/json" }
-                    }),
-                }
-            );
-        }
 
         if (!response.ok) {
             const errTxt = await response.text();
