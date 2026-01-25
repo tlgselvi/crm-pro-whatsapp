@@ -28,41 +28,35 @@ export async function POST(request: NextRequest) {
             kbContext = '\nBİLGİ BANKASI:\n' + kbItems.map((item: any) => `- ${item.topic}: ${item.content}`).join('\n');
         }
 
-        const prompt = `Sen ${companyName} firmasının profesyonel satış asistanısın. 
+        const prompt = `Sen ${companyName} firmasının kıdemli satış asistanısın. 
+Müşteriye teknik olarak bilgili, samimi ve çözüm odaklı cevaplar vermelisin.
 
 Müşteri: ${customerName || 'Müşteri'}
-Son mesajı: "${lastMessage}"
+Mesaj: "${lastMessage}"
+
+BAĞLAM:
+${kbContext || 'Şirket genel vizyonuyla cevap ver.'}
 
 KURALLAR:
-- Tonun: ${tone} olsun.
-- ${instructions}
-- Kısa ve net yaz (max 2-3 cümle).
-- Türkçe yanıt ver.
-- Emojiler kullanabilirsin ama abartma.
-${kbContext}
+- Ton: ${tone}
+- Talimatlar: ${instructions}
+- Uzunluk: Maksimum 2 cümle.
+- Dil: Türkçe.
 
-Müşteriye uygun, satış odaklı ve bilgili bir yanıt yaz:`;
+Satış odaklı cevabını yaz:`;
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    contents: [
-                        {
-                            parts: [
-                                {
-                                    text: prompt,
-                                },
-                            ],
-                        },
-                    ],
+                    contents: [{ parts: [{ text: prompt }] }],
                     generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 200,
+                        temperature: 0.65,
+                        maxOutputTokens: 256,
                     },
                 }),
             }

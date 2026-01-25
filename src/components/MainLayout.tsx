@@ -135,19 +135,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         borderBottom: '1px solid #f1f5f9',
                     }}
                 >
-                    <div style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: 12,
-                        background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        marginRight: 16,
-                        boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)'
-                    }}>
-                        <WhatsAppOutlined style={{ fontSize: 24, color: '#fff' }} />
-                    </div>
+                    <img
+                        src="/crm_pro_logo_platinum.png"
+                        alt="CRM Pro"
+                        style={{ height: 42, width: 'auto', marginRight: 12, borderRadius: 8 }}
+                    />
                     <span style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px' }}>CRM Pro</span>
                 </div>
                 <Menu

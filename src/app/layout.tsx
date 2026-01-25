@@ -28,12 +28,31 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "CRM Pro",
+              "operatingSystem": "Web",
+              "applicationCategory": "BusinessApplication",
+              "offers": {
+                "@type": "Offer",
+                "price": "999",
+                "priceCurrency": "TRY"
+              }
+            })
+          }}
+        />
+      </head>
       <body suppressHydrationWarning>
         <ConfigProvider
           theme={{
             token: {
-              colorPrimary: '#1890ff',
-              borderRadius: 6,
+              colorPrimary: '#2563eb', // Elite blue
+              borderRadius: 12,
             },
           }}
         >
@@ -45,3 +64,4 @@ export default function RootLayout({
     </html>
   );
 }
+
