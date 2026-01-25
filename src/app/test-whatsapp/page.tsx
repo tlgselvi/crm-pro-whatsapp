@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Card, Input, Button, Space, Typography, Alert, Spin, Tag, List, Avatar } from 'antd';
 import { SendOutlined, WhatsAppOutlined, RobotOutlined, UserOutlined } from '@ant-design/icons';
+import { checkSalesbotRules } from '@/lib/salesbot';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
