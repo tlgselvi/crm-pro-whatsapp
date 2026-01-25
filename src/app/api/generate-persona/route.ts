@@ -6,8 +6,11 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
 export async function POST(request: NextRequest) {
     try {
-        const { description, researchData } = await request.json();
         console.log('[Generate-Persona] Request received');
+        // TEST SHORT-CIRCUIT
+        // return NextResponse.json({ success: true, persona: { system_prompt: 'TEST', suggested_faqs: [] } });
+
+        const { description, researchData } = await request.json();
 
         if (!description) {
             return NextResponse.json({ error: 'Description is required' }, { status: 400 });
