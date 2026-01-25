@@ -97,3 +97,42 @@ export async function downloadWhatsAppMedia(url: string): Promise<{ buffer: Buff
     };
 }
 
+export async function sendWhatsAppTemplate(to: string, templateName: string, languageCode: string = 'en_US') {
+    if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
+        throw new Error('WhatsApp credentials not configured');
+    }
+
+    const url = `https://graph.facebook.com/v18.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                to: to,
+                type: 'template',
+                template: {
+                    name: templateName,
+                    language: {
+                        code: languageCode,
+                    },
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`WhatsApp API error: ${error}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error sending WhatsApp template:', error);
+        throw error;
+    }
+}
