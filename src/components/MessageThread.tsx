@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Input, Button, Empty, Spin, Avatar } from 'antd';
-import { SendOutlined, UserOutlined } from '@ant-design/icons';
+import { Input, Button, Empty, Spin, Avatar, message } from 'antd';
+import { SendOutlined, UserOutlined, BulbOutlined } from '@ant-design/icons';
 import { MainContainer, ChatContainer, MessageList, Message, MessageInput } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
@@ -17,6 +17,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [loading, setLoading] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [sending, setSending] = useState(false);
+    const [aiLoading, setAiLoading] = useState(false);
 
     useEffect(() => {
         if (!conversation) {
@@ -100,6 +101,42 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
         }
     }
 
+    async function handleAiSuggest() {
+        if (!conversation) return;
+
+        const lastCustomerMessage = messages
+            .filter((m) => m.sender === 'customer')
+            .slice(-1)[0];
+
+        if (!lastCustomerMessage) {
+            message.warning('Henüz müşteri mesajı yok');
+            return;
+        }
+
+        setAiLoading(true);
+        try {
+            const response = await fetch('/api/ai-suggest', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lastMessage: lastCustomerMessage.content,
+                    customerName: conversation.contact?.name,
+                }),
+            });
+
+            if (!response.ok) throw new Error('AI suggestion failed');
+
+            const data = await response.json();
+            setInputValue(data.suggestion);
+            message.success('AI önerisi hazır! İstersen düzenle ve gönder.');
+        } catch (error) {
+            console.error('AI suggestion error:', error);
+            message.error('AI önerisi alınamadı. API key kontrol edin.');
+        } finally {
+            setAiLoading(false);
+        }
+    }
+
     if (!conversation) {
         return (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
@@ -158,29 +195,41 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
             </div>
 
             {/* Input */}
-            <div style={{ padding: 16, borderTop: '1px solid #f0f0f0', display: 'flex', gap: 8 }}>
-                <Input.TextArea
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onPressEnter={(e) => {
-                        if (!e.shiftKey) {
-                            e.preventDefault();
-                            handleSend();
-                        }
-                    }}
-                    placeholder="Type a message..."
-                    autoSize={{ minRows: 1, maxRows: 4 }}
-                    style={{ flex: 1 }}
-                />
-                <Button
-                    type="primary"
-                    icon={<SendOutlined />}
-                    onClick={handleSend}
-                    loading={sending}
-                    disabled={!inputValue.trim()}
-                >
-                    Send
-                </Button>
+            <div style={{ padding: 16, borderTop: '1px solid #f0f0f0' }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                    <Button
+                        icon={<BulbOutlined />}
+                        onClick={handleAiSuggest}
+                        loading={aiLoading}
+                        size="small"
+                    >
+                        AI Öneri
+                    </Button>
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                    <Input.TextArea
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        onPressEnter={(e) => {
+                            if (!e.shiftKey) {
+                                e.preventDefault();
+                                handleSend();
+                            }
+                        }}
+                        placeholder="Mesaj yazın veya AI'dan öneri alın..."
+                        autoSize={{ minRows: 1, maxRows: 4 }}
+                        style={{ flex: 1 }}
+                    />
+                    <Button
+                        type="primary"
+                        icon={<SendOutlined />}
+                        onClick={handleSend}
+                        loading={sending}
+                        disabled={!inputValue.trim()}
+                    >
+                        Gönder
+                    </Button>
+                </div>
             </div>
         </div>
     );
