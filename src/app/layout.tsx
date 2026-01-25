@@ -26,32 +26,33 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "CRM Pro",
+    "operatingSystem": "Web",
+    "applicationCategory": "BusinessApplication",
+    "offers": {
+      "@type": "Offer",
+      "price": "999",
+      "priceCurrency": "TRY"
+    }
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="manifest" href="/manifest.json" crossOrigin="use-credentials" />
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              "name": "CRM Pro",
-              "operatingSystem": "Web",
-              "applicationCategory": "BusinessApplication",
-              "offers": {
-                "@type": "Offer",
-                "price": "999",
-                "priceCurrency": "TRY"
-              }
-            })
-          }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
       <body suppressHydrationWarning>
         <ConfigProvider
           theme={{
             token: {
-              colorPrimary: '#2563eb', // Elite blue
+              colorPrimary: '#2563eb',
               borderRadius: 12,
             },
           }}
@@ -64,4 +65,5 @@ export default function RootLayout({
     </html>
   );
 }
+
 

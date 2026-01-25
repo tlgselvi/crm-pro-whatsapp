@@ -45,65 +45,83 @@ export async function POST(request: NextRequest) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { response_mime_type: "application/json" }
+                    generationConfig: {
+                        temperature: 1,
+                        topP: 0.95,
+                        topK: 40,
+                        maxOutputTokens: 2048,
+                        response_mime_type: "application/json"
+                    }
                 }),
             }
         );
 
         if (!response.ok) {
             const errTxt = await response.text();
-            throw new Error(`Gemini API request failed: ${errTxt}`);
+            throw new Error(`Gemini API: ${response.status} - ${errTxt}`);
         }
 
         const gData = await response.json();
         let rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
 
-        // Clean markdown if present
-        rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-
-        const persona = JSON.parse(rawText);
-
-        if (!persona.system_prompt || !persona.suggested_faqs) {
-            throw new Error('Invalid persona format received from AI');
+        // Robust parsing
+        let persona;
+        try {
+            persona = JSON.parse(rawText);
+        } catch (pErr) {
+            console.error('JSON Parse Error, raw text:', rawText);
+            // Fallback: try to extract JSON from markdown if Gemini ignored the mime_type
+            const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                persona = JSON.parse(jsonMatch[0]);
+            } else {
+                throw new Error('AI produced invalid JSON output');
+            }
         }
 
-        // 💾 SAVE TO DATABASE
-        // 1. Update AI Settings
-        const { data: existingSettings, error: selectError } = await supabase.from('ai_settings').select('id').limit(1);
+        if (!persona.system_prompt || !persona.suggested_faqs) {
+            throw new Error('Persona structure is incomplete');
+        }
 
-        const settingsId = existingSettings?.length ? existingSettings[0].id : undefined;
+        // 💾 ATOMIC-LIKE DATABASE OPERATIONS
+        // 1. Update AI Settings
+        const { data: currentSet } = await supabase.from('ai_settings').select('id').limit(1).single();
 
         const { error: settingsError } = await supabase
             .from('ai_settings')
             .upsert({
-                id: settingsId,
-                company_name: description.split(' ')[0],
-                tone: persona.tone,
+                id: currentSet?.id,
+                company_name: description.split(' ')[1] || description.split(' ')[0] || 'CRM Pro',
+                tone: persona.tone || 'Professional',
                 system_instructions: persona.system_prompt
             });
 
-        if (settingsError) {
-            console.error('Settings save error:', settingsError);
-        }
+        if (settingsError) throw new Error(`Database Error (Settings): ${settingsError.message}`);
 
-        // 2. Clear and Insert Knowledge Base (Optional: replace or append)
-        await supabase.from('knowledge_base').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Clean start
+        // 2. Clear Knowledge Base (Safely)
+        const { error: delError } = await supabase.from('knowledge_base').delete().neq('topic', '___SYSTEM_RESERVED___');
+        if (delError) console.error('KB clear warning:', delError);
 
-        const faqEntries = persona.suggested_faqs.map((faq: any) => ({
-            topic: faq.question,
-            content: faq.answer
-        }));
+        // 3. Insert new KB items
+        if (persona.suggested_faqs && Array.isArray(persona.suggested_faqs)) {
+            const faqEntries = persona.suggested_faqs.map((faq: any) => ({
+                topic: faq.question?.substring(0, 255) || 'Question',
+                content: faq.answer || ''
+            })).filter((f: any) => f.content.length > 0);
 
-        const { error: kbError } = await supabase.from('knowledge_base').insert(faqEntries);
-        if (kbError) {
-            console.error('KB save error:', kbError);
+            if (faqEntries.length > 0) {
+                const { error: kbError } = await supabase.from('knowledge_base').insert(faqEntries);
+                if (kbError) throw new Error(`Database Error (KB): ${kbError.message}`);
+            }
         }
 
         return NextResponse.json({ success: true, persona });
     } catch (error: any) {
+        console.error('CRITICAL API ERROR:', error);
         return NextResponse.json({
-            error: error.message,
-            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            error: error.message || 'Unknown internal error',
+            status: 'error'
         }, { status: 500 });
     }
 }
+
