@@ -1,74 +1,86 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto:wght@400;500&display=swap');
 
 :root {
-  --primary-deep: #0f172a;
-  --primary-glow: rgba(59, 130, 246, 0.5);
-  --accent: #3b82f6;
-  --background: #f8fafc;
-  --glass: rgba(255, 255, 255, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.2);
-  --sidebar-bg: #ffffff;
-  --card-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+  --background: #131314;
+  --container-bg: #1e1f20;
+  --border-color: #444746;
+  --text-main: #e3e3e3;
+  --text-secondary: #c4c7c5;
+  --primary-pastel: #a8c7fa;
+  --input-bg: #28292a;
 }
 
 @theme inline {
   --color-background: var(--background);
-  --color-foreground: var(--primary-deep);
+  --color-foreground: var(--text-main);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--primary-deep);
-  font-family: 'Outfit', sans-serif;
+  background-color: var(--background) !important;
+  color: var(--text-main) !important;
+  font-family: 'Inter', 'Roboto', sans-serif !important;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Luxury Utilities */
-.glass-card {
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--card-shadow);
-  border-radius: 16px !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* AI Studio Protocol Card Styles */
+.ant-card, .ant-pro-card {
+  background: var(--container-bg) !important;
+  border-color: var(--border-color) !important;
+  box-shadow: none !important;
 }
 
-.glass-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-  border-color: rgba(59, 130, 246, 0.3);
+.ant-card-head {
+  border-bottom: 1px solid var(--border-color) !important;
+  color: var(--text-main) !important;
 }
 
-.premium-gradient {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-  color: white;
-}
-
-.text-gradient {
-  background: linear-gradient(to right, #0f172a, #3b82f6);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-
-/* Ant Design Customizations */
+/* Sidebar & Layout Overrides */
 .ant-layout {
   background: var(--background) !important;
 }
 
 .ant-layout-sider {
-  background: var(--sidebar-bg) !important;
-  border-right: 1px solid #e2e8f0 !important;
+  background: var(--container-bg) !important;
+  border-right: 1px solid var(--border-color) !important;
 }
 
-.ant-menu {
-  background: transparent !important;
-  border: none !important;
+.ant-layout-header {
+  background: var(--container-bg) !important;
+  border-bottom: 1px solid var(--border-color) !important;
 }
 
-.ant-menu-item-selected {
-  background: rgba(59, 130, 246, 0.08) !important;
-  color: #2563eb !important;
-  border-radius: 8px !important;
+/* Input Fields - Google Style */
+.ant-input, .ant-input-password, .ant-input-affix-wrapper, .ant-select-selector {
+  background-color: var(--input-bg) !important;
+  border: 1px solid transparent !important;
+  color: var(--text-main) !important;
 }
 
+.ant-input:focus, .ant-input-affix-wrapper-focused {
+  border-color: var(--primary-pastel) !important;
+  box-shadow: none !important;
+}
+
+/* Premium Transitions */
+.ant-btn {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Clear Legacy Utility Classes */
+.glass-card {
+  background: var(--container-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: none !important;
+}
+
+.premium-gradient {
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+}
+
+.text-gradient {
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: var(--text-main);
+}
