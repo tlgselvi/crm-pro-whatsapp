@@ -145,7 +145,7 @@ export default function AiSettingsPage() {
                     <Title level={2}><RobotOutlined /> AI Eğitim Merkezi</Title>
                     <Paragraph>Botun şirketini daha iyi tanıması için ayarları yap ve bilgi bankasını doldur.</Paragraph>
                 </div>
-                <Badge status="processing" text="Gemini-2.5 Pro Destekli" />
+                <Badge status="processing" text="Gemini 1.5 Flash Destekli" />
             </div>
 
             <Card
