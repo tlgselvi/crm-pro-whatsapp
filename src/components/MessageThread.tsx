@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Input, Button, Empty, Spin, Avatar, App, Image, Modal, Tabs, List, DatePicker, Checkbox, Space, Badge } from 'antd';
+import { Input, Button, Empty, Spin, Avatar, App, Image, Modal, Tabs, List, DatePicker, Checkbox, Space, Badge, Typography } from 'antd';
+const { Text } = Typography;
 import { SendOutlined, UserOutlined, BulbOutlined, FileTextOutlined, DownloadOutlined, CalendarOutlined, PlusOutlined, DeleteOutlined, LayoutOutlined } from '@ant-design/icons';
+
 import { MainContainer, ChatContainer, MessageList, Message, MessageInput } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
