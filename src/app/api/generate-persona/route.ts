@@ -50,34 +50,48 @@ export async function POST(request: NextRequest) {
             }
         );
 
-        if (!response.ok) throw new Error('Gemini API request failed');
+        if (!response.ok) {
+            const errTxt = await response.text();
+            throw new Error(`Gemini API request failed: ${errTxt}`);
+        }
 
         const gData = await response.json();
         let rawText = gData.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+
+        console.log('AI Raw Response:', rawText.substring(0, 100));
 
         // Clean markdown if present
         rawText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
 
         const persona = JSON.parse(rawText);
 
+        if (!persona.system_prompt || !persona.suggested_faqs) {
+            throw new Error('Invalid persona format received from AI');
+        }
+
         // 💾 SAVE TO DATABASE
         // 1. Update AI Settings
-        const { data: existingSettings } = await supabase.from('ai_settings').select('id').limit(1);
-        const settingsId = existingSettings?.[0]?.id;
+        const { data: existingSettings, error: selectError } = await supabase.from('ai_settings').select('id').limit(1);
+        if (selectError) console.error('Select settings error:', selectError);
+
+        const settingsId = existingSettings?.length ? existingSettings[0].id : undefined;
+
+        console.log('Target Settings ID:', settingsId);
 
         const { error: settingsError } = await supabase
             .from('ai_settings')
             .upsert({
                 id: settingsId,
-                company_name: description.split(' ')[0], // Best guess for name
+                company_name: description.split(' ')[0],
                 tone: persona.tone,
                 system_instructions: persona.system_prompt
             });
 
-        if (settingsError) console.error('Settings save error:', settingsError);
+        if (settingsError) {
+            console.error('Settings save error:', settingsError);
+        }
 
         // 2. Clear and Insert Knowledge Base (Optional: replace or append)
-        // User said "otomatik kaydet", usually means fresh start for persona
         await supabase.from('knowledge_base').delete().neq('id', '00000000-0000-0000-0000-000000000000'); // Clean start
 
         const faqEntries = persona.suggested_faqs.map((faq: any) => ({
@@ -86,11 +100,16 @@ export async function POST(request: NextRequest) {
         }));
 
         const { error: kbError } = await supabase.from('knowledge_base').insert(faqEntries);
-        if (kbError) console.error('KB save error:', kbError);
+        if (kbError) {
+            console.error('KB save error:', kbError);
+        }
 
         return NextResponse.json({ success: true, persona });
     } catch (error: any) {
-        console.error('Persona generation error:', error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        console.error('FAILED PERSONA GENERATION:', error);
+        return NextResponse.json({
+            error: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        }, { status: 500 });
     }
 }
