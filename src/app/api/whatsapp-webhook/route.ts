@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         if (messageError) throw messageError;
 
         // 🤖 SALESBOT: Check for auto-reply rules
-        const autoReply = checkSalesbotRules(messageBody);
+        const autoReply = await checkSalesbotRules(messageBody);
 
         if (autoReply) {
             // Save bot response to database
