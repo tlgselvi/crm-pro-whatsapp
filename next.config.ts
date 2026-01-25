@@ -7,7 +7,8 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 });
 
-const nextConfig: any = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   output: 'standalone',
   async headers() {
     return [
@@ -24,5 +25,5 @@ const nextConfig: any = {
   },
 };
 
+module.exports = withPWA(nextConfig);
 
-export default withPWA(nextConfig);
