@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { checkSalesbotRules } from '@/lib/salesbot';
+import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'your_verify_token_here';
 
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
             conversation = newConv;
         }
 
-        // Save message
+        // Save incoming message
         const { error: messageError } = await supabase.from('messages').insert({
             conversation_id: conversation.id,
             sender: 'customer',
@@ -99,10 +101,32 @@ export async function POST(request: NextRequest) {
 
         if (messageError) throw messageError;
 
-        // Mark as read on WhatsApp (optional)
-        // await markWhatsAppMessageAsRead(messageId);
+        // 🤖 SALESBOT: Check for auto-reply rules
+        const autoReply = checkSalesbotRules(messageBody);
 
-        return NextResponse.json({ status: 'success' }, { status: 200 });
+        if (autoReply) {
+            console.log('Salesbot triggered! Auto-replying...');
+
+            // Save bot response to database
+            await supabase.from('messages').insert({
+                conversation_id: conversation.id,
+                sender: 'agent',
+                content: autoReply,
+                is_read: true,
+                platform: 'whatsapp',
+            });
+
+            // Send response via WhatsApp (if credentials configured)
+            try {
+                await sendWhatsAppMessage(from, autoReply);
+                console.log('Salesbot auto-reply sent successfully');
+            } catch (whatsappError) {
+                console.error('WhatsApp send failed (credentials missing?):', whatsappError);
+                // Continue even if WhatsApp send fails - message saved to DB
+            }
+        }
+
+        return NextResponse.json({ status: 'success', botTriggered: !!autoReply }, { status: 200 });
     } catch (error) {
         console.error('Webhook error:', error);
         return NextResponse.json({ error: 'Processing failed' }, { status: 500 });

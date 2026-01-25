@@ -6,7 +6,11 @@ interface SendMessageParams {
     message: string;
 }
 
-export async function sendWhatsAppMessage({ to, message }: SendMessageParams) {
+// Support both calling styles
+export async function sendWhatsAppMessage(toOrParams: string | SendMessageParams, message?: string) {
+    const to = typeof toOrParams === 'string' ? toOrParams : toOrParams.to;
+    const msg = typeof toOrParams === 'string' ? message! : toOrParams.message;
+
     if (!WHATSAPP_PHONE_NUMBER_ID || !WHATSAPP_ACCESS_TOKEN) {
         throw new Error('WhatsApp credentials not configured');
     }
@@ -25,7 +29,7 @@ export async function sendWhatsAppMessage({ to, message }: SendMessageParams) {
                 to: to,
                 type: 'text',
                 text: {
-                    body: message,
+                    body: msg,
                 },
             }),
         });
