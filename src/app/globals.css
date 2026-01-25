@@ -1,5 +1,6 @@
-@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Roboto:wght@400;500&display=swap');
+@import "tailwindcss";
+
 
 :root {
   --background: #131314;
@@ -24,7 +25,8 @@ body {
 }
 
 /* AI Studio Protocol Card Styles */
-.ant-card, .ant-pro-card {
+.ant-card,
+.ant-pro-card {
   background: var(--container-bg) !important;
   border-color: var(--border-color) !important;
   box-shadow: none !important;
@@ -51,13 +53,17 @@ body {
 }
 
 /* Input Fields - Google Style */
-.ant-input, .ant-input-password, .ant-input-affix-wrapper, .ant-select-selector {
+.ant-input,
+.ant-input-password,
+.ant-input-affix-wrapper,
+.ant-select-selector {
   background-color: var(--input-bg) !important;
   border: 1px solid transparent !important;
   color: var(--text-main) !important;
 }
 
-.ant-input:focus, .ant-input-affix-wrapper-focused {
+.ant-input:focus,
+.ant-input-affix-wrapper-focused {
   border-color: var(--primary-pastel) !important;
   box-shadow: none !important;
 }

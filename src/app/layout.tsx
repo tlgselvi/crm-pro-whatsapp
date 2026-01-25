@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { ConfigProvider, App } from "antd";
 import MainLayout from "@/components/MainLayout";
+import themeConfig from "@/theme/themeConfig";
 import "./globals.css";
+
 
 export const metadata: Metadata = {
   title: "CRM Pro | Elite WhatsApp Business Intelligence",
