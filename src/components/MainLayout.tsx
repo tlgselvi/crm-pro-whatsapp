@@ -9,6 +9,7 @@ import {
     SettingOutlined,
     WhatsAppOutlined,
     ProjectOutlined,
+    RobotOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { MenuProps } from 'antd';
@@ -37,6 +38,11 @@ const items: MenuItemType[] = [
         key: '/inbox',
         icon: <MessageOutlined />,
         label: 'Inbox',
+    },
+    {
+        key: '/salesbot',
+        icon: <RobotOutlined />,
+        label: 'Salesbot',
     },
     {
         key: '/contacts',
