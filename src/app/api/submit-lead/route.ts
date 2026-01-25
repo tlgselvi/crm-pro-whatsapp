@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
-// High-performance Edge Runtime
-export const runtime = 'edge';
 
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
