@@ -7,6 +7,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 export async function POST(request: NextRequest) {
     try {
         const { description, researchData } = await request.json();
+        console.log('[Generate-Persona] Request received');
 
         if (!description) {
             return NextResponse.json({ error: 'Description is required' }, { status: 400 });
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
         }
 
         // 🧠 Prompt for Gemini based on research or description
+        console.log('[Generate-Persona] Preparing Gemini Prompt');
         const prompt = `
         Sen bir CRM uzmanısın. Aşağıdaki sektör/işletme açıklaması ve araştırmasına dayanarak bir AI Satış Botu personası oluştur.
         
@@ -39,6 +41,7 @@ export async function POST(request: NextRequest) {
         
         Sadece JSON objesini döndür, başka metin ekleme.`;
 
+        console.log('[Generate-Persona] Fetching Gemini...');
         let response = await fetch(
             `https://generativelanguage.googleapis.com/v1/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             {
@@ -89,6 +92,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Initialize Server Client
+        console.log('[Generate-Persona] Init Supabase Client');
         const cookieStore = await cookies();
         const supabase = createServerClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
