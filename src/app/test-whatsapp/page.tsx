@@ -33,6 +33,9 @@ export default function WhatsAppTestPage() {
             { type: 'customer', content: customerMessage, timestamp: new Date() },
         ]);
 
+        // ✨ Check Salesbot rules to get actual response
+        const botResponse = checkSalesbotRules(customerMessage);
+
         try {
             // Simulate WhatsApp webhook payload
             const webhookPayload = {
@@ -67,15 +70,25 @@ export default function WhatsAppTestPage() {
             const data = await response.json();
             setLastResponse(data);
 
-            // If bot triggered, show bot response
-            if (data.botTriggered) {
-                // Wait a bit for dramatic effect
+            // If bot triggered, show REAL bot response
+            if (data.botTriggered && botResponse) {
                 setTimeout(() => {
                     setMessages((prev) => [
                         ...prev,
                         {
                             type: 'bot',
-                            content: 'Salesbot otomatik cevap verdi! (Inbox\'ta görüntüleyin)',
+                            content: botResponse,
+                            timestamp: new Date(),
+                        },
+                    ]);
+                }, 500);
+            } else if (data.botTriggered) {
+                setTimeout(() => {
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            type: 'bot',
+                            content: '✅ Salesbot tetiklendi (cevap Inbox\'ta)',
                             timestamp: new Date(),
                         },
                     ]);
