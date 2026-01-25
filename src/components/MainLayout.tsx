@@ -87,8 +87,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const pathname = usePathname();
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        setMounted(true);
         const getUser = async () => {
             const { data: { user } } = await supabase.auth.getUser();
             setUser(user);

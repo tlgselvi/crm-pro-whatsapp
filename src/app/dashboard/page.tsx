@@ -19,6 +19,7 @@ interface DashboardStats {
 }
 
 export default function DashboardPage() {
+    const [mounted, setMounted] = useState(false);
     const [stats, setStats] = useState<DashboardStats>({
         totalContacts: 0,
         activeConversations: 0,
@@ -29,10 +30,13 @@ export default function DashboardPage() {
     const [upcomingTasks, setUpcomingTasks] = useState<any[]>([]);
 
     useEffect(() => {
+        setMounted(true);
         fetchStats();
         fetchRecentMessages();
         fetchUpcomingTasks();
     }, []);
+
+    if (!mounted) return null;
 
     async function fetchStats() {
         try {
