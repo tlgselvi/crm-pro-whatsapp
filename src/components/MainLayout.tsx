@@ -121,11 +121,11 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     return (
         <Layout style={{ minHeight: '100vh' }}>
             <Sider
-                theme="light"
+                theme="dark"
                 width={280}
                 style={{
-                    borderRight: '1px solid #e2e8f0',
-                    background: '#ffffff'
+                    borderRight: '1px solid #444746',
+                    background: '#1e1f20'
                 }}
             >
                 <div
@@ -134,16 +134,17 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                         display: 'flex',
                         alignItems: 'center',
                         padding: '0 32px',
-                        borderBottom: '1px solid #f1f5f9',
+                        borderBottom: '1px solid #444746',
                     }}
                 >
                     <img
                         src="/crm_pro_logo_platinum.png"
                         alt="CRM Pro"
-                        style={{ height: 42, width: 'auto', marginRight: 12, borderRadius: 8 }}
+                        style={{ height: 32, width: 'auto', marginRight: 12, borderRadius: 6, filter: 'brightness(1.2)' }}
                     />
-                    <span style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px' }}>CRM Pro</span>
+                    <span style={{ fontSize: 18, fontWeight: 500, color: '#e3e3e3', letterSpacing: '0.2px' }}>CRM Pro</span>
                 </div>
+
                 <Menu
                     mode="inline"
                     selectedKeys={[pathname]}
@@ -155,43 +156,43 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
             <Layout>
                 <Header
                     style={{
-                        background: 'rgba(255, 255, 255, 0.8)',
-                        backdropFilter: 'blur(8px)',
+                        background: '#1e1f20',
                         padding: '0 40px',
                         height: 80,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        borderBottom: '1px solid #f1f5f9',
+                        borderBottom: '1px solid #444746',
                         position: 'sticky',
                         top: 0,
                         zIndex: 1000
                     }}
                 >
-                    <div className="text-gradient" style={{ fontSize: 22, fontWeight: 600 }}>
+                    <div style={{ fontSize: 20, fontWeight: 500, color: '#e3e3e3' }}>
                         {items.find((item) => item.key === pathname)?.label || 'CRM'}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{user?.email?.split('@')[0]}</span>
-                            <span style={{ fontSize: 12, color: '#64748b' }}>{user?.email}</span>
+                            <span style={{ fontWeight: 500, fontSize: 14, color: '#e3e3e3' }}>{user?.email?.split('@')[0]}</span>
+                            <span style={{ fontSize: 12, color: '#c4c7c5' }}>{user?.email}</span>
                         </div>
-                        <Badge dot color="#25D366">
+                        <Badge dot color="#a8c7fa">
                             <Avatar
                                 icon={<UserOutlined />}
-                                size={44}
+                                size={40}
                                 style={{
                                     cursor: 'pointer',
-                                    background: '#f1f5f9',
-                                    border: '1px solid #e2e8f0',
-                                    color: '#64748b'
+                                    background: '#28292a',
+                                    border: '1px solid #444746',
+                                    color: '#c4c7c5'
                                 }}
                                 onClick={handleLogout}
                             />
                         </Badge>
                     </div>
                 </Header>
-                <Content style={{ padding: '40px', background: '#f8fafc' }}>
+                <Content style={{ padding: '40px', background: '#131314' }}>
+
                     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
                         {children}
                     </div>
@@ -203,18 +204,22 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     to { opacity: 1; transform: translateY(0); }
                 }
                 .ant-menu-item {
-                    height: 48px !important;
-                    line-height: 48px !important;
-                    margin-bottom: 8px !important;
-                    border-radius: 12px !important;
+                    height: 44px !important;
+                    line-height: 44px !important;
+                    margin-bottom: 4px !important;
+                    border-radius: 9999px !important; /* Material 3 Pill style */
                 }
                 .ant-menu-item-selected {
-                    background: rgba(59, 130, 246, 0.1) !important;
-                    color: #2563eb !important;
+                    background: #004a77 !important;
+                    color: #c2e7ff !important;
+                }
+                .ant-menu-item:hover {
+                    background: #28292a !important;
                 }
                 .ant-menu-item-icon {
-                    font-size: 18px !important;
+                    font-size: 20px !important;
                 }
+
             `}</style>
         </Layout>
     );

@@ -49,19 +49,13 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
-        <ConfigProvider
-          theme={{
-            token: {
-              colorPrimary: '#2563eb',
-              borderRadius: 12,
-            },
-          }}
-        >
+        <ConfigProvider theme={themeConfig}>
           <App>
             <MainLayout>{children}</MainLayout>
           </App>
         </ConfigProvider>
       </body>
+
     </html>
   );
 }
