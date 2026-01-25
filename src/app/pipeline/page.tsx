@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Avatar, Tag, Typography, Spin, Empty } from 'antd';
+import { Card, Avatar, Tag, Typography, Spin, Empty, Badge } from 'antd';
 import { UserOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { supabase, type Contact } from '@/lib/supabase';
@@ -128,19 +128,26 @@ export default function PipelinePage() {
                         <div
                             key={stage.id}
                             style={{
-                                minWidth: 300,
-                                background: '#f5f5f5',
-                                borderRadius: 8,
+                                minWidth: 320,
+                                background: 'rgba(241, 245, 249, 0.4)',
+                                borderRadius: 16,
                                 padding: 16,
+                                height: 'fit-content',
+                                border: '1px solid #e2e8f0'
                             }}
                         >
                             {/* Column Header */}
-                            <div style={{ marginBottom: 16 }}>
+                            <div style={{ marginBottom: 20 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text strong style={{ fontSize: 16 }}>
+                                    <Text strong style={{ fontSize: 15, color: '#1e293b' }}>
                                         {stage.name}
                                     </Text>
-                                    <Tag color={stage.color}>{contacts[stage.id]?.length || 0}</Tag>
+                                    <Badge
+                                        count={contacts[stage.id]?.length || 0}
+                                        showZero
+                                        color={stage.color}
+                                        style={{ backgroundColor: stage.color, boxShadow: `0 0 10px ${stage.color}44` }}
+                                    />
                                 </div>
                             </div>
 
@@ -151,17 +158,18 @@ export default function PipelinePage() {
                                         ref={provided.innerRef}
                                         {...provided.droppableProps}
                                         style={{
-                                            minHeight: 400,
-                                            background: snapshot.isDraggingOver ? '#e6f7ff' : 'transparent',
-                                            borderRadius: 4,
-                                            transition: 'background 0.2s',
+                                            minHeight: 500,
+                                            background: snapshot.isDraggingOver ? 'rgba(59, 130, 246, 0.03)' : 'transparent',
+                                            borderRadius: 12,
+                                            transition: 'all 0.2s ease',
+                                            padding: '4px'
                                         }}
                                     >
                                         {contacts[stage.id]?.length === 0 ? (
                                             <Empty
                                                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                description="Bu aşamada kişi yok"
-                                                style={{ padding: '40px 0' }}
+                                                description={<Text type="secondary">Boş</Text>}
+                                                style={{ padding: '60px 0' }}
                                             />
                                         ) : (
                                             contacts[stage.id]?.map((contact, index) => (
@@ -171,36 +179,41 @@ export default function PipelinePage() {
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
-                                                            variant="outlined"
+                                                            className="glass-card"
+                                                            variant="borderless"
                                                             style={{
-                                                                marginBottom: 12,
+                                                                marginBottom: 16,
                                                                 cursor: 'grab',
-                                                                background: snapshot.isDragging ? '#fff' : '#fff',
-                                                                boxShadow: snapshot.isDragging
-                                                                    ? '0 8px 16px rgba(0,0,0,0.15)'
-                                                                    : '0 1px 2px rgba(0,0,0,0.08)',
                                                                 ...provided.draggableProps.style,
                                                             }}
                                                             size="small"
                                                         >
                                                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                                                                <Avatar icon={<UserOutlined />} size={40} />
+                                                                <Avatar
+                                                                    icon={<UserOutlined />}
+                                                                    size={44}
+                                                                    style={{
+                                                                        backgroundColor: '#f1f5f9',
+                                                                        border: '1px solid #e2e8f0',
+                                                                        color: '#64748b'
+                                                                    }}
+                                                                />
                                                                 <div style={{ flex: 1 }}>
-                                                                    <Text strong style={{ display: 'block', marginBottom: 4 }}>
+                                                                    <Text strong style={{ display: 'block', fontSize: 14, color: '#0f172a' }}>
                                                                         {contact.name}
                                                                     </Text>
-                                                                    <div style={{ fontSize: 12, color: '#8c8c8c' }}>
-                                                                        <PhoneOutlined style={{ marginRight: 4 }} />
+                                                                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                                                                        <PhoneOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                         {contact.phone}
                                                                     </div>
                                                                     {contact.email && (
-                                                                        <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 2 }}>
-                                                                            <MailOutlined style={{ marginRight: 4 }} />
+                                                                        <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                                                                            <MailOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                             {contact.email}
                                                                         </div>
                                                                     )}
-                                                                    <div style={{ fontSize: 11, color: '#bfbfbf', marginTop: 8 }}>
-                                                                        {dayjs(contact.created_at).format('MMM DD, YYYY')}
+                                                                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                                                                        {dayjs(contact.created_at).format('DD MMM')}
                                                                     </div>
                                                                 </div>
                                                             </div>

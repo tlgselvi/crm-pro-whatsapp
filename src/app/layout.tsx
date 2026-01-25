@@ -4,16 +4,21 @@ import MainLayout from "@/components/MainLayout";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CRM Pro - WhatsApp Business",
-  description: "Free-tier CRM system with WhatsApp integration",
+  title: "CRM Pro | Elite WhatsApp Business Intelligence",
+  description: "Next-generation customer relationship management with seamless WhatsApp integration and AI-driven insights.",
   manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "CRM Pro",
+  },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1890ff",
+  themeColor: "#0f172a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({

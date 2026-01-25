@@ -120,57 +120,108 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         <Layout style={{ minHeight: '100vh' }}>
             <Sider
                 theme="light"
-                width={240}
+                width={280}
                 style={{
-                    borderRight: '1px solid #f0f0f0',
+                    borderRight: '1px solid #e2e8f0',
+                    background: '#ffffff'
                 }}
             >
                 <div
                     style={{
-                        height: 64,
+                        height: 80,
                         display: 'flex',
                         alignItems: 'center',
-                        padding: '0 24px',
-                        borderBottom: '1px solid #f0f0f0',
+                        padding: '0 32px',
+                        borderBottom: '1px solid #f1f5f9',
                     }}
                 >
-                    <WhatsAppOutlined style={{ fontSize: 24, color: '#25D366', marginRight: 12 }} />
-                    <span style={{ fontSize: 18, fontWeight: 600 }}>CRM Pro</span>
+                    <div style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 12,
+                        background: 'linear-gradient(135deg, #25D366 0%, #128C7E 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 16,
+                        boxShadow: '0 4px 12px rgba(37, 211, 102, 0.3)'
+                    }}>
+                        <WhatsAppOutlined style={{ fontSize: 24, color: '#fff' }} />
+                    </div>
+                    <span style={{ fontSize: 20, fontWeight: 700, color: '#0f172a', letterSpacing: '-0.5px' }}>CRM Pro</span>
                 </div>
                 <Menu
                     mode="inline"
                     selectedKeys={[pathname]}
                     items={items as MenuProps['items']}
                     onClick={handleMenuClick}
-                    style={{ border: 'none', marginTop: 16 }}
+                    style={{ border: 'none', marginTop: 24, padding: '0 12px' }}
                 />
             </Sider>
             <Layout>
                 <Header
                     style={{
-                        background: '#fff',
-                        padding: '0 24px',
+                        background: 'rgba(255, 255, 255, 0.8)',
+                        backdropFilter: 'blur(8px)',
+                        padding: '0 40px',
+                        height: 80,
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        borderBottom: '1px solid #f0f0f0',
+                        borderBottom: '1px solid #f1f5f9',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1000
                     }}
                 >
-                    <div style={{ fontSize: 16, fontWeight: 500 }}>
+                    <div className="text-gradient" style={{ fontSize: 22, fontWeight: 600 }}>
                         {items.find((item) => item.key === pathname)?.label || 'CRM'}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
                         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontWeight: 600, lineHeight: '1.2' }}>{user?.email?.split('@')[0]}</span>
-                            <span style={{ fontSize: 12, color: '#8c8c8c' }}>{user?.email}</span>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: '#0f172a' }}>{user?.email?.split('@')[0]}</span>
+                            <span style={{ fontSize: 12, color: '#64748b' }}>{user?.email}</span>
                         </div>
-                        <Badge dot>
-                            <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} onClick={handleLogout} />
+                        <Badge dot color="#25D366">
+                            <Avatar
+                                icon={<UserOutlined />}
+                                size={44}
+                                style={{
+                                    cursor: 'pointer',
+                                    background: '#f1f5f9',
+                                    border: '1px solid #e2e8f0',
+                                    color: '#64748b'
+                                }}
+                                onClick={handleLogout}
+                            />
                         </Badge>
                     </div>
                 </Header>
-                <Content style={{ padding: 24, background: '#f5f5f5' }}>{children}</Content>
+                <Content style={{ padding: '40px', background: '#f8fafc' }}>
+                    <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
+                        {children}
+                    </div>
+                </Content>
             </Layout>
+            <style jsx global>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .ant-menu-item {
+                    height: 48px !important;
+                    line-height: 48px !important;
+                    margin-bottom: 8px !important;
+                    border-radius: 12px !important;
+                }
+                .ant-menu-item-selected {
+                    background: rgba(59, 130, 246, 0.1) !important;
+                    color: #2563eb !important;
+                }
+                .ant-menu-item-icon {
+                    font-size: 18px !important;
+                }
+            `}</style>
         </Layout>
     );
 }

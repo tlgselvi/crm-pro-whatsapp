@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
+// High-performance Edge Runtime
+export const runtime = 'edge';
+
 const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
@@ -12,13 +15,24 @@ export async function OPTIONS() {
 }
 
 export async function POST(request: NextRequest) {
+    const origin = request.headers.get('origin');
+
     try {
         const body = await request.json();
         const { name, email, phone, message, formId } = body;
 
-        if (!name || !phone) {
+        // 🛡️ Basic Rate Limiting / Validation
+        if (!name || !phone || name.length < 2) {
             return NextResponse.json(
-                { error: 'Name and Phone are required' },
+                { error: 'Geçersiz veri girişi. İsim ve Telefon zorunludur.' },
+                { status: 400, headers: corsHeaders }
+            );
+        }
+
+        const cleanPhone = phone.replace(/\D/g, '');
+        if (cleanPhone.length < 10) {
+            return NextResponse.json(
+                { error: 'Geçersiz telefon numarası.' },
                 { status: 400, headers: corsHeaders }
             );
         }
@@ -27,9 +41,9 @@ export async function POST(request: NextRequest) {
         const { data: contact, error: contactError } = await supabase
             .from('contacts')
             .upsert({
-                name,
-                email: email || null,
-                phone: phone.replace(/\D/g, ''), // Clean phone
+                name: name.trim(),
+                email: email?.trim() || null,
+                phone: cleanPhone,
                 stage: 'Incoming',
             }, { onConflict: 'phone' })
             .select()
@@ -53,20 +67,20 @@ export async function POST(request: NextRequest) {
         await supabase.from('messages').insert({
             conversation_id: conversation.id,
             sender: 'customer',
-            content: `[Form Submission] ${message || 'No message provided.'}`,
+            content: `[Web Form] ${message?.trim() || 'Mesaj bırakılmadı.'}`,
             platform: 'web',
             is_read: false
         });
 
         return NextResponse.json(
-            { success: true, message: 'Lead submitted successfully' },
+            { success: true, message: 'Talep başarıyla alındı.' },
             { status: 200, headers: corsHeaders }
         );
     } catch (error: any) {
-        console.error('Submit Lead Error:', error);
         return NextResponse.json(
-            { error: 'Internal Server Error', details: error.message },
+            { error: 'İşlem başarısız.', details: error.message },
             { status: 500, headers: corsHeaders }
         );
     }
 }
+

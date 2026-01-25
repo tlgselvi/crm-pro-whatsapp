@@ -9,7 +9,7 @@ import relativeTime from 'dayjs/plugin/relativeTime';
 
 dayjs.extend(relativeTime);
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 
 interface DashboardStats {
     totalContacts: number;
@@ -94,45 +94,50 @@ export default function DashboardPage() {
     }
 
     return (
-        <div>
-            <Title level={2} style={{ marginBottom: 24 }}>Panel</Title>
+        <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 0' }}>
+            <div style={{ marginBottom: 32 }}>
+                <Title level={2} className="text-gradient" style={{ margin: 0 }}>Sistem Özeti</Title>
+                <Text type="secondary" style={{ fontSize: 16 }}>İşletmenizin anlık performans verileri.</Text>
+            </div>
 
-            <Row gutter={16} style={{ marginBottom: 24 }}>
-                <Col span={6}>
-                    <Card variant="outlined">
+            <Row gutter={[24, 24]} style={{ marginBottom: 40 }}>
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="glass-card" variant="borderless">
                         <Statistic
-                            title="Toplam Kişi"
+                            title={<Text strong style={{ color: '#64748b' }}>Toplam Müşteri</Text>}
                             value={stats.totalContacts}
-                            prefix={<UserOutlined />}
-                            valueStyle={{ color: '#3f8600' }}
+                            prefix={<UserOutlined style={{ padding: 8, background: 'rgba(59, 130, 246, 0.1)', borderRadius: 12, color: '#3b82f6' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
                         />
                     </Card>
                 </Col>
-                <Col span={6}>
-                    <Card variant="outlined">
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="glass-card" variant="borderless">
                         <Statistic
-                            title="Aktif Konuşmalar"
+                            title={<Text strong style={{ color: '#64748b' }}>Aktif Sohbet</Text>}
                             value={stats.activeConversations}
-                            prefix={<MessageOutlined />}
-                            valueStyle={{ color: '#1890ff' }}
+                            prefix={<MessageOutlined style={{ padding: 8, background: 'rgba(16, 185, 129, 0.1)', borderRadius: 12, color: '#10b981' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
                         />
                     </Card>
                 </Col>
-                <Col span={6}>
-                    <Card variant="outlined">
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="glass-card" variant="borderless">
                         <Statistic
-                            title="Toplam Mesaj"
+                            title={<Text strong style={{ color: '#64748b' }}>Mesaj Trafiği</Text>}
                             value={stats.totalMessages}
-                            prefix={<CheckCircleOutlined />}
+                            prefix={<CheckCircleOutlined style={{ padding: 8, background: 'rgba(139, 92, 246, 0.1)', borderRadius: 12, color: '#8b5cf6' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
                         />
                     </Card>
                 </Col>
-                <Col span={6}>
-                    <Card variant="outlined">
+                <Col xs={24} sm={12} lg={6}>
+                    <Card className="glass-card" variant="borderless">
                         <Statistic
-                            title="Ort. Yanıt Süresi"
+                            title={<Text strong style={{ color: '#64748b' }}>Yanıt Hızı</Text>}
                             value={stats.avgResponseTime}
-                            prefix={<ClockCircleOutlined />}
+                            prefix={<ClockCircleOutlined style={{ padding: 8, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 12, color: '#f59e0b' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
                         />
                     </Card>
                 </Col>
