@@ -34,7 +34,7 @@ export default function ContactsPage() {
 
     const columns = [
         {
-            title: 'Contact',
+            title: 'Kişi',
             dataIndex: 'name',
             key: 'name',
             render: (name: string, record: Contact) => (
@@ -42,13 +42,13 @@ export default function ContactsPage() {
                     <Avatar icon={<UserOutlined />} />
                     <div>
                         <div style={{ fontWeight: 600 }}>{name}</div>
-                        <div style={{ fontSize: 12, color: '#8c8c8c' }}>{record.email || 'No email'}</div>
+                        <div style={{ fontSize: 12, color: '#8c8c8c' }}>{record.email || 'E-posta yok'}</div>
                     </div>
                 </Space>
             ),
         },
         {
-            title: 'Phone',
+            title: 'Telefon',
             dataIndex: 'phone',
             key: 'phone',
             render: (phone: string) => (
@@ -59,7 +59,7 @@ export default function ContactsPage() {
             ),
         },
         {
-            title: 'Source',
+            title: 'Kaynak',
             key: 'source',
             render: () => (
                 <Tag icon={<WhatsAppOutlined />} color="success">
@@ -68,18 +68,18 @@ export default function ContactsPage() {
             ),
         },
         {
-            title: 'Created',
+            title: 'Oluşturulma',
             dataIndex: 'created_at',
             key: 'created_at',
-            render: (date: string) => dayjs(date).format('MMM DD, YYYY'),
+            render: (date: string) => dayjs(date).format('DD MMM YYYY'),
         },
         {
-            title: 'Actions',
+            title: 'İşlemler',
             key: 'actions',
             render: (_: unknown, record: Contact) => (
                 <Space>
-                    <Button type="link" size="small">View Details</Button>
-                    <Button type="link" size="small">Send Message</Button>
+                    <Button type="link" size="small">Detayları Gör</Button>
+                    <Button type="link" size="small">Mesaj Gönder</Button>
                 </Space>
             ),
         },
@@ -88,9 +88,9 @@ export default function ContactsPage() {
     return (
         <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                <Title level={2} style={{ margin: 0 }}>Contacts</Title>
+                <Title level={2} style={{ margin: 0 }}>Rehber</Title>
                 <Button type="primary" icon={<UserOutlined />}>
-                    Add Contact
+                    Kişi Ekle
                 </Button>
             </div>
 

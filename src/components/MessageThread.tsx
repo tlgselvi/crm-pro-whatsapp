@@ -25,10 +25,10 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [dueDate, setDueDate] = useState<Dayjs | null>(null);
 
     useEffect(() => {
-        if (conversation.contact?.id) {
+        if (conversation?.contact?.id) {
             fetchTasks(conversation.contact.id);
         }
-    }, [conversation.contact?.id]);
+    }, [conversation?.contact?.id]);
 
     async function fetchTasks(contactId: string) {
         setTasksLoading(true);
@@ -42,7 +42,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     }
 
     const addTask = async () => {
-        if (!newTaskNote || !dueDate || !conversation.contact?.id) return;
+        if (!newTaskNote || !dueDate || !conversation?.contact?.id) return;
 
         const { error } = await supabase.from('tasks').insert([{
             contact_id: conversation.contact.id,
@@ -56,7 +56,9 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
             message.success('Görev eklendi');
             setNewTaskNote('');
             setDueDate(null);
-            fetchTasks(conversation.contact.id);
+            if (conversation?.contact?.id) {
+                fetchTasks(conversation.contact.id);
+            }
         }
     };
 
@@ -64,13 +66,13 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
         const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
         const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
         if (error) message.error('Durum güncellenemedi');
-        else fetchTasks(conversation.contact!.id);
+        else if (conversation?.contact?.id) fetchTasks(conversation.contact.id);
     };
 
     const deleteTask = async (taskId: string) => {
         const { error } = await supabase.from('tasks').delete().eq('id', taskId);
         if (error) message.error('Silinemedi');
-        else fetchTasks(conversation.contact!.id);
+        else if (conversation?.contact?.id) fetchTasks(conversation.contact.id);
     };
 
     const [templateModalOpen, setTemplateModalOpen] = useState(false);
@@ -105,6 +107,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     };
 
     const { message } = App.useApp();
+
 
     useEffect(() => {
         if (!conversation) {
@@ -207,7 +210,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     lastMessage: lastCustomerMessage.content,
-                    customerName: conversation.contact?.name,
+                    customerName: conversation?.contact?.name,
                 }),
             });
 
@@ -230,7 +233,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     if (!conversation) {
         return (
             <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
-                <Empty description="Select a conversation to start messaging" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+                <Empty description="Mesajlaşmaya başlamak için bir konuşma seçin" image={Empty.PRESENTED_IMAGE_SIMPLE} />
             </div>
         );
     }
@@ -275,7 +278,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                                         model={{
                                             message: msg.content,
                                             sentTime: dayjs(msg.timestamp).format('HH:mm'),
-                                            sender: msg.sender === 'agent' ? 'You' : conversation?.contact?.name || 'Customer',
+                                            sender: msg.sender === 'agent' ? 'Siz' : conversation?.contact?.name || 'Müşteri',
                                             direction: msg.sender === 'agent' ? 'outgoing' : 'incoming',
                                             position: 'single',
                                         }}

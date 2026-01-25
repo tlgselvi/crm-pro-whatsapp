@@ -13,7 +13,7 @@ export default function InboxPage() {
         <Row gutter={16} style={{ height: 'calc(100vh - 112px)' }}>
             <Col span={8}>
                 <Card
-                    title="Conversations"
+                    title="Konuşmalar"
                     variant="borderless"
                     styles={{ body: { padding: 0, height: 'calc(100vh - 176px)', overflow: 'auto' } }}
                 >

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Form, Input, Button, Card, Typography, message, App } from 'antd';
-import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, LoginOutlined, GoogleOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Card, Typography, message, App, Divider } from 'antd';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -12,6 +12,20 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
     const { message } = App.useApp();
+
+    const handleGoogleLogin = async () => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+            if (error) throw error;
+        } catch (error: any) {
+            message.error(error.message || 'Google ile giriş başarısız.');
+        }
+    };
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -24,8 +38,13 @@ export default function LoginPage() {
             if (error) throw error;
 
             message.success('Giriş başarılı! Yönlendiriliyorsunuz...');
-            router.push('/dashboard');
-            router.refresh();
+
+            // Wait a bit for cookies to sync
+            setTimeout(() => {
+                router.refresh();
+                router.push('/dashboard');
+            }, 500);
+
         } catch (error: any) {
             message.error(error.message || 'Giriş yapılamadı. Bilgilerinizi kontrol edin.');
         } finally {
@@ -88,6 +107,24 @@ export default function LoginPage() {
                         </Button>
                     </Form.Item>
                 </Form>
+
+                <div style={{ margin: '16px 0' }}>
+                    <Divider plain>veya</Divider>
+                    <Button
+                        block
+                        icon={<GoogleOutlined />}
+                        onClick={handleGoogleLogin}
+                        style={{
+                            height: 45,
+                            borderRadius: 8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}
+                    >
+                        Google ile Giriş Yap
+                    </Button>
+                </div>
 
                 <div style={{ textAlign: 'center' }}>
                     <Text type="secondary" style={{ fontSize: 12 }}>

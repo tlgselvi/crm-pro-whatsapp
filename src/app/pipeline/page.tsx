@@ -10,13 +10,13 @@ import dayjs from 'dayjs';
 const { Title, Text } = Typography;
 
 const STAGES = [
-    { id: 'new', name: 'Incoming', color: '#1890ff' },
-    { id: 'contacted', name: 'Contacted', color: '#52c41a' },
-    { id: 'qualified', name: 'Qualified', color: '#faad14' },
-    { id: 'proposal', name: 'Proposal', color: '#722ed1' },
-    { id: 'negotiation', name: 'Negotiation', color: '#eb2f96' },
-    { id: 'won', name: 'Won', color: '#52c41a' },
-    { id: 'lost', name: 'Lost', color: '#ff4d4f' },
+    { id: 'new', name: 'Yeni Gelenler', color: '#1890ff' },
+    { id: 'contacted', name: 'İletişim Kuruldu', color: '#52c41a' },
+    { id: 'qualified', name: 'Nitelikli Lead', color: '#faad14' },
+    { id: 'proposal', name: 'Teklif Gönderildi', color: '#722ed1' },
+    { id: 'negotiation', name: 'Pazarlık', color: '#eb2f96' },
+    { id: 'won', name: 'Satış Kapatıldı', color: '#52c41a' },
+    { id: 'lost', name: 'Kaybedildi', color: '#ff4d4f' },
 ];
 
 interface PipelineData {
@@ -120,7 +120,7 @@ export default function PipelinePage() {
 
     return (
         <div>
-            <Title level={2} style={{ marginBottom: 24 }}>Sales Pipeline</Title>
+            <Title level={2} style={{ marginBottom: 24 }}>Satış Hunisi</Title>
 
             <DragDropContext onDragEnd={onDragEnd}>
                 <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
@@ -160,7 +160,7 @@ export default function PipelinePage() {
                                         {contacts[stage.id]?.length === 0 ? (
                                             <Empty
                                                 image={Empty.PRESENTED_IMAGE_SIMPLE}
-                                                description="No contacts"
+                                                description="Bu aşamada kişi yok"
                                                 style={{ padding: '40px 0' }}
                                             />
                                         ) : (

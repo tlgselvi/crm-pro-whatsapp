@@ -33,52 +33,52 @@ const items: MenuItemType[] = [
     {
         key: '/dashboard',
         icon: <DashboardOutlined />,
-        label: 'Dashboard',
+        label: 'Panel',
     },
     {
         key: '/pipeline',
         icon: <ProjectOutlined />,
-        label: 'Pipeline',
+        label: 'Satış Hunisi',
     },
     {
         key: '/inbox',
         icon: <MessageOutlined />,
-        label: 'Inbox',
+        label: 'Gelen Kutusu',
     },
     {
         key: '/salesbot',
         icon: <RobotOutlined />,
-        label: 'Salesbot',
+        label: 'Satış Botu',
     },
     {
         key: '/broadcasting',
         icon: <SoundOutlined />,
-        label: 'Broadcasting',
+        label: 'Toplu Mesaj',
     },
     {
         key: '/contacts',
         icon: <UserOutlined />,
-        label: 'Contacts',
+        label: 'Rehber',
     },
     {
         key: '/test-whatsapp',
         icon: <WhatsAppOutlined />,
-        label: 'Test WhatsApp',
+        label: 'WhatsApp Test',
     },
     {
         key: '/settings',
         icon: <SettingOutlined />,
-        label: 'Settings',
+        label: 'Ayarlar',
     },
     {
         key: '/settings/ai',
         icon: <RobotOutlined />,
-        label: 'AI Training',
+        label: 'AI Eğitimi',
     },
     {
         key: '/settings/forms',
         icon: <ProjectOutlined />,
-        label: 'Forms',
+        label: 'Formlar',
     },
 ];
 

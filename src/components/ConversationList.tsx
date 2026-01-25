@@ -104,7 +104,7 @@ export default function ConversationList({
     if (conversations.length === 0) {
         return (
             <Empty
-                description="No conversations yet"
+                description="Henüz konuşma yok"
                 style={{ marginTop: 60 }}
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
             />
@@ -137,7 +137,7 @@ export default function ConversationList({
                         }
                         title={
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Text strong>{item.contact?.name || 'Unknown'}</Text>
+                                <Text strong>{item.contact?.name || 'Bilinmiyor'}</Text>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
                                     {dayjs(item.last_message_at).fromNow()}
                                 </Text>
@@ -151,7 +151,7 @@ export default function ConversationList({
                                     fontWeight: item.unread_count > 0 ? 600 : 400,
                                 }}
                             >
-                                {item.last_message?.content || 'No messages yet'}
+                                {item.last_message?.content || 'Henüz mesaj yok'}
                             </Text>
                         }
                     />

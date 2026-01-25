@@ -95,13 +95,13 @@ export default function DashboardPage() {
 
     return (
         <div>
-            <Title level={2} style={{ marginBottom: 24 }}>Dashboard</Title>
+            <Title level={2} style={{ marginBottom: 24 }}>Panel</Title>
 
             <Row gutter={16} style={{ marginBottom: 24 }}>
                 <Col span={6}>
                     <Card variant="outlined">
                         <Statistic
-                            title="Total Contacts"
+                            title="Toplam Kişi"
                             value={stats.totalContacts}
                             prefix={<UserOutlined />}
                             valueStyle={{ color: '#3f8600' }}
@@ -111,7 +111,7 @@ export default function DashboardPage() {
                 <Col span={6}>
                     <Card variant="outlined">
                         <Statistic
-                            title="Active Conversations"
+                            title="Aktif Konuşmalar"
                             value={stats.activeConversations}
                             prefix={<MessageOutlined />}
                             valueStyle={{ color: '#1890ff' }}
@@ -121,7 +121,7 @@ export default function DashboardPage() {
                 <Col span={6}>
                     <Card variant="outlined">
                         <Statistic
-                            title="Total Messages"
+                            title="Toplam Mesaj"
                             value={stats.totalMessages}
                             prefix={<CheckCircleOutlined />}
                         />
@@ -130,7 +130,7 @@ export default function DashboardPage() {
                 <Col span={6}>
                     <Card variant="outlined">
                         <Statistic
-                            title="Avg Response Time"
+                            title="Ort. Yanıt Süresi"
                             value={stats.avgResponseTime}
                             prefix={<ClockCircleOutlined />}
                         />
