@@ -100,52 +100,53 @@ export default function DashboardPage() {
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 0' }}>
             <div style={{ marginBottom: 32 }}>
-                <Title level={2} className="text-gradient" style={{ margin: 0 }}>Sistem Özeti</Title>
-                <Text type="secondary" style={{ fontSize: 16 }}>İşletmenizin anlık performans verileri.</Text>
+                <Title level={2} style={{ margin: 0, color: 'var(--text-main)' }}>Sistem Özeti</Title>
+                <Text style={{ fontSize: 16, color: 'var(--text-secondary)' }}>İşletmenizin anlık performans verileri.</Text>
             </div>
 
             <Row gutter={[24, 24]} style={{ marginBottom: 40 }}>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card className="glass-card" variant="borderless">
+                    <Card variant="borderless">
                         <Statistic
-                            title={<Text strong style={{ color: '#64748b' }}>Toplam Müşteri</Text>}
+                            title={<Text style={{ color: 'var(--text-secondary)' }}>Toplam Müşteri</Text>}
                             value={stats.totalContacts}
-                            prefix={<UserOutlined style={{ padding: 8, background: 'rgba(59, 130, 246, 0.1)', borderRadius: 12, color: '#3b82f6' }} />}
-                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
+                            prefix={<UserOutlined style={{ padding: 8, background: 'rgba(168, 199, 250, 0.1)', borderRadius: 12, color: 'var(--primary-pastel)' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 500, color: 'var(--text-main)' }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card className="glass-card" variant="borderless">
+                    <Card variant="borderless">
                         <Statistic
-                            title={<Text strong style={{ color: '#64748b' }}>Aktif Sohbet</Text>}
+                            title={<Text style={{ color: 'var(--text-secondary)' }}>Aktif Sohbet</Text>}
                             value={stats.activeConversations}
-                            prefix={<MessageOutlined style={{ padding: 8, background: 'rgba(16, 185, 129, 0.1)', borderRadius: 12, color: '#10b981' }} />}
-                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
+                            prefix={<MessageOutlined style={{ padding: 8, background: 'rgba(168, 199, 250, 0.1)', borderRadius: 12, color: 'var(--primary-pastel)' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 500, color: 'var(--text-main)' }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card className="glass-card" variant="borderless">
+                    <Card variant="borderless">
                         <Statistic
-                            title={<Text strong style={{ color: '#64748b' }}>Mesaj Trafiği</Text>}
+                            title={<Text style={{ color: 'var(--text-secondary)' }}>Mesaj Trafiği</Text>}
                             value={stats.totalMessages}
-                            prefix={<CheckCircleOutlined style={{ padding: 8, background: 'rgba(139, 92, 246, 0.1)', borderRadius: 12, color: '#8b5cf6' }} />}
-                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
+                            prefix={<CheckCircleOutlined style={{ padding: 8, background: 'rgba(168, 199, 250, 0.1)', borderRadius: 12, color: 'var(--primary-pastel)' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 500, color: 'var(--text-main)' }}
                         />
                     </Card>
                 </Col>
                 <Col xs={24} sm={12} lg={6}>
-                    <Card className="glass-card" variant="borderless">
+                    <Card variant="borderless">
                         <Statistic
-                            title={<Text strong style={{ color: '#64748b' }}>Yanıt Hızı</Text>}
+                            title={<Text style={{ color: 'var(--text-secondary)' }}>Yanıt Hızı</Text>}
                             value={stats.avgResponseTime}
-                            prefix={<ClockCircleOutlined style={{ padding: 8, background: 'rgba(245, 158, 11, 0.1)', borderRadius: 12, color: '#f59e0b' }} />}
-                            valueStyle={{ fontSize: 28, fontWeight: 700, color: '#0f172a' }}
+                            prefix={<ClockCircleOutlined style={{ padding: 8, background: 'rgba(168, 199, 250, 0.1)', borderRadius: 12, color: 'var(--primary-pastel)' }} />}
+                            valueStyle={{ fontSize: 28, fontWeight: 500, color: 'var(--text-main)' }}
                         />
                     </Card>
                 </Col>
             </Row>
+
 
             <Row gutter={16}>
                 <Col span={12}>

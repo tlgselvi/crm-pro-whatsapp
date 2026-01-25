@@ -129,19 +129,20 @@ export default function PipelinePage() {
                             key={stage.id}
                             style={{
                                 minWidth: 320,
-                                background: 'rgba(241, 245, 249, 0.4)',
+                                background: 'rgba(255, 255, 255, 0.02)',
                                 borderRadius: 16,
                                 padding: 16,
                                 height: 'fit-content',
-                                border: '1px solid #e2e8f0'
+                                border: '1px solid var(--border-color)'
                             }}
                         >
                             {/* Column Header */}
                             <div style={{ marginBottom: 20 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Text strong style={{ fontSize: 15, color: '#1e293b' }}>
+                                    <Text strong style={{ fontSize: 15, color: 'var(--text-main)' }}>
                                         {stage.name}
                                     </Text>
+
                                     <Badge
                                         count={contacts[stage.id]?.length || 0}
                                         showZero
@@ -193,19 +194,20 @@ export default function PipelinePage() {
                                                                     icon={<UserOutlined />}
                                                                     size={44}
                                                                     style={{
-                                                                        backgroundColor: '#f1f5f9',
-                                                                        border: '1px solid #e2e8f0',
-                                                                        color: '#64748b'
+                                                                        backgroundColor: '#28292a',
+                                                                        border: '1px solid var(--border-color)',
+                                                                        color: 'var(--text-secondary)'
                                                                     }}
                                                                 />
                                                                 <div style={{ flex: 1 }}>
-                                                                    <Text strong style={{ display: 'block', fontSize: 14, color: '#0f172a' }}>
+                                                                    <Text strong style={{ display: 'block', fontSize: 14, color: 'var(--text-main)' }}>
                                                                         {contact.name}
                                                                     </Text>
-                                                                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>
+                                                                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                                                                         <PhoneOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                         {contact.phone}
                                                                     </div>
+
                                                                     {contact.email && (
                                                                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                                                                             <MailOutlined style={{ marginRight: 6, fontSize: 10 }} />
