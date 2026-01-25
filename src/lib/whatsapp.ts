@@ -71,3 +71,29 @@ export async function markWhatsAppMessageAsRead(messageId: string) {
         console.error('Error marking message as read:', error);
     }
 }
+
+export async function getWhatsAppMediaUrl(mediaId: string): Promise<string> {
+    const url = `https://graph.facebook.com/v19.0/${mediaId}`;
+    const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}` }
+    });
+
+    if (!response.ok) throw new Error('WhatsApp Media Metadata fetch failed');
+    const data = await response.json();
+    return data.url;
+}
+
+export async function downloadWhatsAppMedia(url: string): Promise<{ buffer: Buffer; contentType: string }> {
+    const response = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}` }
+    });
+
+    if (!response.ok) throw new Error('WhatsApp Media download failed');
+
+    const arrayBuffer = await response.arrayBuffer();
+    return {
+        buffer: Buffer.from(arrayBuffer),
+        contentType: response.headers.get('content-type') || 'application/octet-stream'
+    };
+}
+

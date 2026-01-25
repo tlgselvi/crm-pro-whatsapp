@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { checkSalesbotRules } from '@/lib/salesbot';
-import { sendWhatsAppMessage } from '@/lib/whatsapp';
+import { sendWhatsAppMessage, getWhatsAppMediaUrl, downloadWhatsAppMedia } from '@/lib/whatsapp';
 
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || 'your_verify_token_here';
 
@@ -39,8 +39,42 @@ export async function POST(request: NextRequest) {
 
         const message = messages[0];
         const from = message.from; // Phone number
-        const messageBody = message.text?.body || '';
         const messageId = message.id;
+        const type = message.type;
+
+        let messageBody = message.text?.body || '';
+        let mediaUrl = null;
+        let mediaType = type;
+
+        // Handle Media (image/document/video/audio)
+        if (type === 'image' || type === 'document') {
+            const mediaData = message[type];
+            const mediaId = mediaData.id;
+            messageBody = mediaData.caption || (type === 'image' ? 'Resim gönderildi' : 'Dosya gönderildi');
+
+            try {
+                const metaUrl = await getWhatsAppMediaUrl(mediaId);
+                const { buffer, contentType } = await downloadWhatsAppMedia(metaUrl);
+
+                const fileName = `${mediaId}.${contentType.split('/')[1] || 'bin'}`;
+                const { data: uploadData, error: uploadError } = await supabase.storage
+                    .from('whatsapp-media')
+                    .upload(`${from}/${fileName}`, buffer, {
+                        contentType: contentType,
+                        upsert: true
+                    });
+
+                if (uploadError) throw uploadError;
+
+                const { data: { publicUrl } } = supabase.storage
+                    .from('whatsapp-media')
+                    .getPublicUrl(uploadData.path);
+
+                mediaUrl = publicUrl;
+            } catch (mediaErr) {
+                console.error('Media processing error:', mediaErr);
+            }
+        }
 
         // Find or create contact
         let contact;
@@ -97,6 +131,8 @@ export async function POST(request: NextRequest) {
             content: messageBody,
             is_read: false,
             platform: 'whatsapp',
+            media_url: mediaUrl,
+            media_type: mediaType === 'text' ? null : mediaType,
         });
 
         if (messageError) throw messageError;

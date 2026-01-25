@@ -9,7 +9,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    persistSession: false, // No auth needed for MVP
+    persistSession: true,
   },
   realtime: {
     params: {
@@ -46,6 +46,8 @@ export interface Message {
   timestamp: string;
   is_read: boolean;
   platform: 'whatsapp' | 'web' | 'internal';
+  media_url?: string;
+  media_type?: string;
 }
 
 export interface Broadcast {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -15,19 +16,33 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const prompt = `Sen profesyonel bir satış asistanısın. 
+        // 🧠 FETCH KNOWLEDGE BASE AND SETTINGS
+        const { data: settings } = await supabase.from('ai_settings').select('*').single();
+        const { data: kbItems } = await supabase.from('knowledge_base').select('topic, content');
+
+        const companyName = settings?.company_name || 'CRM Pro';
+        const tone = settings?.tone || 'professional';
+        const instructions = settings?.system_instructions || '';
+
+        let kbContext = '';
+        if (kbItems && kbItems.length > 0) {
+            kbContext = '\nBİLGİ BANKASI:\n' + kbItems.map((item: any) => `- ${item.topic}: ${item.content}`).join('\n');
+        }
+
+        const prompt = `Sen ${companyName} firmasının profesyonel satış asistanısın. 
 
 Müşteri: ${customerName || 'Müşteri'}
 Son mesajı: "${lastMessage}"
 
-Kuralllar:
-- Kibar ve profesyonel ol
-- Satış odaklı ama pushy olma
-- Kısa ve net yaz (max 2-3 cümle)
-- Türkçe yanıt ver
-- Emojiler kullanabilirsin ama abartma
+KURALLAR:
+- Tonun: ${tone} olsun.
+- ${instructions}
+- Kısa ve net yaz (max 2-3 cümle).
+- Türkçe yanıt ver.
+- Emojiler kullanabilirsin ama abartma.
+${kbContext}
 
-Müşteriye uygun bir yanıt yaz:`;
+Müşteriye uygun, satış odaklı ve bilgili bir yanıt yaz:`;
 
         const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,

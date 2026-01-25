@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Input, Button, Empty, Spin, Avatar, App } from 'antd';
-import { SendOutlined, UserOutlined, BulbOutlined } from '@ant-design/icons';
+import { Input, Button, Empty, Spin, Avatar, App, Image, Modal } from 'antd';
+import { SendOutlined, UserOutlined, BulbOutlined, FileTextOutlined, DownloadOutlined } from '@ant-design/icons';
 import { MainContainer, ChatContainer, MessageList, Message, MessageInput } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
@@ -191,7 +191,30 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                                         direction: msg.sender === 'agent' ? 'outgoing' : 'incoming',
                                         position: 'single',
                                     }}
-                                />
+                                >
+                                    {msg.media_url && (
+                                        <div style={{ marginTop: 8, maxWidth: '100%' }}>
+                                            {msg.media_type === 'image' ? (
+                                                <Image
+                                                    src={msg.media_url}
+                                                    alt="WhatsApp Image"
+                                                    width={200}
+                                                    style={{ borderRadius: 8, cursor: 'pointer' }}
+                                                />
+                                            ) : (
+                                                <Button
+                                                    icon={<FileTextOutlined />}
+                                                    href={msg.media_url}
+                                                    target="_blank"
+                                                    size="small"
+                                                    style={{ display: 'flex', alignItems: 'center' }}
+                                                >
+                                                    {msg.content || 'Dosyayı İndir'} <DownloadOutlined style={{ marginLeft: 4 }} />
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
+                                </Message>
                             ))}
                         </MessageList>
                     </ChatContainer>

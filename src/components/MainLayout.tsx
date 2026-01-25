@@ -1,5 +1,7 @@
 'use client';
 
+import "@ant-design/v5-patch-for-react-19";
+
 import React from 'react';
 import { Layout, Menu, Avatar, Badge } from 'antd';
 import {
@@ -13,7 +15,10 @@ import {
     SoundOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 import type { MenuProps } from 'antd';
+import { useEffect, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 
 const { Header, Sider, Content } = Layout;
 
@@ -65,15 +70,45 @@ const items: MenuItemType[] = [
         icon: <SettingOutlined />,
         label: 'Settings',
     },
+    {
+        key: '/settings/ai',
+        icon: <RobotOutlined />,
+        label: 'AI Training',
+    },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
+    const [user, setUser] = useState<User | null>(null);
+
+    useEffect(() => {
+        const getUser = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            setUser(user);
+        };
+        getUser();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            setUser(session?.user ?? null);
+        });
+
+        return () => subscription.unsubscribe();
+    }, []);
 
     const handleMenuClick: MenuProps['onClick'] = (e) => {
         router.push(e.key);
     };
+
+    const handleLogout = async () => {
+        await supabase.auth.signOut();
+        router.push('/login');
+        router.refresh();
+    };
+
+    if (pathname === '/login') {
+        return <>{children}</>;
+    }
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -118,9 +153,15 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     <div style={{ fontSize: 16, fontWeight: 500 }}>
                         {items.find((item) => item.key === pathname)?.label || 'CRM'}
                     </div>
-                    <Badge dot>
-                        <Avatar icon={<UserOutlined />} />
-                    </Badge>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
+                            <span style={{ fontWeight: 600, lineHeight: '1.2' }}>{user?.email?.split('@')[0]}</span>
+                            <span style={{ fontSize: 12, color: '#8c8c8c' }}>{user?.email}</span>
+                        </div>
+                        <Badge dot>
+                            <Avatar icon={<UserOutlined />} style={{ cursor: 'pointer' }} onClick={handleLogout} />
+                        </Badge>
+                    </div>
                 </Header>
                 <Content style={{ padding: 24, background: '#f5f5f5' }}>{children}</Content>
             </Layout>
