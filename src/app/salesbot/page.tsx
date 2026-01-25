@@ -53,7 +53,7 @@ export default function SalesbotPage() {
             title: 'Status',
             key: 'status',
             width: 100,
-            render: (_, record: BotRule) => (
+            render: (_: unknown, record: BotRule) => (
                 <Tag icon={<CheckCircleOutlined />} color="success">
                     Active
                 </Tag>

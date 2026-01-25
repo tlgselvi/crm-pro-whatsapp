@@ -76,7 +76,7 @@ export default function ContactsPage() {
         {
             title: 'Actions',
             key: 'actions',
-            render: (_, record: Contact) => (
+            render: (_: unknown, record: Contact) => (
                 <Space>
                     <Button type="link" size="small">View Details</Button>
                     <Button type="link" size="small">Send Message</Button>
