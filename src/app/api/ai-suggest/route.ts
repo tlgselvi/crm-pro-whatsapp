@@ -45,7 +45,7 @@ KURALLAR:
 
 Satış odaklı cevabını yaz:`;
 
-        const response = await fetch(
+        let response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
@@ -61,6 +61,27 @@ Satış odaklı cevabını yaz:`;
                 }),
             }
         );
+
+        // 🛡️ FALLBACK LOGIC: If 2.5 Pro hits quota (429), try 1.5 Flash
+        if (response.status === 429) {
+            console.warn('Gemini 2.5 Pro quota hit. Falling back to 1.5 Flash...');
+            response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.65,
+                            maxOutputTokens: 256,
+                        },
+                    }),
+                }
+            );
+        }
 
         if (!response.ok) {
             const errorText = await response.text();
