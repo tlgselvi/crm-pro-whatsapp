@@ -232,15 +232,15 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
 
     if (!conversation) {
         return (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
-                <Empty description="Mesajlaşmaya başlamak için bir konuşma seçin" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
+                <Empty description={<Text style={{ color: 'var(--text-secondary)' }}>Mesajlaşmaya başlamak için bir konuşma seçin</Text>} image={Empty.PRESENTED_IMAGE_SIMPLE} />
             </div>
         );
     }
 
     if (loading) {
         return (
-            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
+            <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--background)' }}>
                 <Spin size="large" />
             </div>
         );
@@ -249,23 +249,25 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     return (
         <div style={{ height: '100%', display: 'flex' }}>
             {/* Main Chat Area */}
-            <div style={{ flex: 1, background: 'white', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{ flex: 1, background: 'var(--background)', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 {/* Header */}
                 <div
                     style={{
                         padding: '16px 24px',
-                        borderBottom: '1px solid #f0f0f0',
+                        borderBottom: '1px solid var(--border-color)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 12,
+                        background: 'var(--container-bg)'
                     }}
                 >
-                    <Avatar icon={<UserOutlined />} size={40} />
+                    <Avatar icon={<UserOutlined />} size={40} style={{ background: '#28292a' }} />
                     <div>
-                        <div style={{ fontWeight: 600, fontSize: 16 }}>{conversation?.contact?.name}</div>
-                        <div style={{ color: '#8c8c8c', fontSize: 12 }}>{conversation?.contact?.phone}</div>
+                        <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--text-main)' }}>{conversation?.contact?.name}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{conversation?.contact?.phone}</div>
                     </div>
                 </div>
+
 
                 {/* Messages */}
                 <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
@@ -313,7 +315,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                 </div>
 
                 {/* Input */}
-                <div style={{ padding: 16, borderTop: '1px solid #f0f0f0' }}>
+                <div style={{ padding: 16, borderTop: '1px solid var(--border-color)', background: 'var(--container-bg)' }}>
                     <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
                         <Button
                             icon={<BulbOutlined />}
@@ -360,20 +362,21 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
             </div>
 
             {/* Sidebar with Profile & Tasks */}
-            <div style={{ width: 300, borderLeft: '1px solid #f0f0f0', background: '#fff' }}>
+            <div style={{ width: 300, borderLeft: '1px solid var(--border-color)', background: 'var(--container-bg)' }}>
                 <Tabs defaultActiveKey="1" items={[
                     {
                         key: '1',
                         label: 'Profil',
                         children: (
                             <div style={{ padding: 20, textAlign: 'center' }}>
-                                <Avatar size={64} icon={<UserOutlined />} style={{ marginBottom: 16 }} />
-                                <div style={{ fontSize: 18, fontWeight: 600 }}>{conversation?.contact?.name}</div>
-                                <div style={{ color: '#8c8c8c', marginBottom: 24 }}>{conversation?.contact?.phone}</div>
-                                <Badge status="processing" text="Aktif Müşteri" />
+                                <Avatar size={64} icon={<UserOutlined />} style={{ marginBottom: 16, background: '#28292a' }} />
+                                <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{conversation?.contact?.name}</div>
+                                <div style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>{conversation?.contact?.phone}</div>
+                                <Badge status="processing" text={<span style={{ color: 'var(--text-secondary)' }}>Aktif Müşteri</span>} />
                             </div>
                         )
                     },
+
                     {
                         key: '2',
                         label: 'Görevler',
@@ -414,8 +417,8 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                                                     onChange={() => toggleTask(task.id, task.status)}
                                                 />
                                                 <div style={{ textDecoration: task.status === 'completed' ? 'line-through' : 'none' }}>
-                                                    <div style={{ fontSize: 13 }}>{task.note}</div>
-                                                    <div style={{ fontSize: 11, color: dayjs(task.due_date).isBefore(dayjs()) ? '#ff4d4f' : '#8c8c8c' }}>
+                                                    <div style={{ fontSize: 13, color: 'var(--text-main)' }}>{task.note}</div>
+                                                    <div style={{ fontSize: 11, color: dayjs(task.due_date).isBefore(dayjs()) ? '#ff4d4f' : 'var(--text-secondary)' }}>
                                                         {dayjs(task.due_date).format('DD MMM HH:mm')}
                                                     </div>
                                                 </div>
@@ -428,6 +431,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                     }
                 ]} />
             </div>
+
 
             <Modal
                 title="WhatsApp Şablonu Gönder"

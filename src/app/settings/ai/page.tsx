@@ -149,11 +149,11 @@ export default function AiSettingsPage() {
             </div>
 
             <Card
-                title={<span><PlusOutlined /> Sihirli Değnek (Otomatik Bot Eğitimi)</span>}
-                style={{ marginBottom: 24, border: '2px solid #1890ff' }}
-                styles={{ header: { background: '#e6f7ff' } }}
+                className="premium-gradient"
+                title={<span style={{ color: 'var(--primary-pastel)' }}><PlusOutlined /> Sihirli Değnek (Otomatik Bot Eğitimi)</span>}
+                style={{ marginBottom: 24 }}
             >
-                <Paragraph type="secondary">
+                <Paragraph style={{ color: 'var(--text-secondary)' }}>
                     İşletmenizi veya web sitenizi kısaca anlatın, AI sizin için en uygun bot kişiliğini ve 5 adet Sıkça Sorulan Soru'yu hazırlasın.
                 </Paragraph>
                 <Form form={magicForm} onFinish={generateMagicPersona} layout="inline">
@@ -176,6 +176,7 @@ export default function AiSettingsPage() {
                     </Form.Item>
                 </Form>
             </Card>
+
 
             <Tabs defaultActiveKey="1" items={[
                 {

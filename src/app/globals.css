@@ -85,8 +85,69 @@ body {
   border: 1px solid var(--border-color);
 }
 
-.text-gradient {
-  background: none;
-  -webkit-text-fill-color: initial;
-  color: var(--text-main);
+/* Ant Design List & Item Overrides */
+.ant-list-item {
+  border-color: var(--border-color) !important;
+}
+
+.ant-list-item:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Tabs UI Override */
+.ant-tabs-nav::before {
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.ant-tabs-tab {
+  color: var(--text-secondary) !important;
+}
+
+.ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--primary-pastel) !important;
+}
+
+.ant-tabs-ink-bar {
+  background: var(--primary-pastel) !important;
+}
+
+/* Table Dark Standard */
+.ant-table {
+  background: transparent !important;
+  color: var(--text-main) !important;
+}
+
+.ant-table-thead>tr>th {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-secondary) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.ant-table-tbody>tr>td {
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.ant-table-cell-row-hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+/* Chat scope overrides */
+.cs-main-container {
+  background: var(--background) !important;
+  border: none !important;
+}
+
+.cs-message-list {
+  background: var(--background) !important;
+}
+
+.cs-message--incoming .cs-message__content {
+  background: var(--container-bg) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.cs-message--outgoing .cs-message__content {
+  background: #004a77 !important;
+  color: #c2e7ff !important;
 }

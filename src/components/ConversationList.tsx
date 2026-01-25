@@ -119,10 +119,12 @@ export default function ConversationList({
                     onClick={() => onSelectConversation(item)}
                     style={{
                         cursor: 'pointer',
-                        background: item.id === selectedId ? '#e6f7ff' : 'white',
-                        borderLeft: item.id === selectedId ? '3px solid #1890ff' : '3px solid transparent',
+                        background: item.id === selectedId ? '#004a77' : 'transparent',
+                        borderLeft: item.id === selectedId ? '3px solid var(--primary-pastel)' : '3px solid transparent',
                         padding: '12px 16px',
+                        transition: 'all 0.2s ease'
                     }}
+                    className="conversation-item"
                 >
                     <List.Item.Meta
                         avatar={
@@ -130,15 +132,16 @@ export default function ConversationList({
                                 <Avatar
                                     icon={item.last_message?.platform === 'whatsapp' ? <WhatsAppOutlined /> : <UserOutlined />}
                                     style={{
-                                        background: item.last_message?.platform === 'whatsapp' ? '#25D366' : '#1890ff',
+                                        background: item.last_message?.platform === 'whatsapp' ? '#25D366' : 'var(--primary-pastel)',
+                                        color: item.last_message?.platform === 'whatsapp' ? '#fff' : '#000'
                                     }}
                                 />
                             </Badge>
                         }
                         title={
                             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Text strong>{item.contact?.name || 'Bilinmiyor'}</Text>
-                                <Text type="secondary" style={{ fontSize: 12 }}>
+                                <Text strong style={{ color: 'var(--text-main)' }}>{item.contact?.name || 'Bilinmiyor'}</Text>
+                                <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
                                     {dayjs(item.last_message_at).fromNow()}
                                 </Text>
                             </div>
@@ -146,9 +149,9 @@ export default function ConversationList({
                         description={
                             <Text
                                 ellipsis
-                                type="secondary"
                                 style={{
                                     fontWeight: item.unread_count > 0 ? 600 : 400,
+                                    color: item.unread_count > 0 ? 'var(--text-main)' : 'var(--text-secondary)'
                                 }}
                             >
                                 {item.last_message?.content || 'Henüz mesaj yok'}
@@ -156,6 +159,7 @@ export default function ConversationList({
                         }
                     />
                 </List.Item>
+
             )}
         />
     );
