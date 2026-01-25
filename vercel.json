@@ -1,8 +1,7 @@
 {
-  "functions": [
-    {
-      "source": "api/whatsapp-webhook/**",
+  "functions": {
+    "src/app/api/whatsapp-webhook/route.ts": {
       "maxDuration": 10
     }
-  ]
+  }
 }
