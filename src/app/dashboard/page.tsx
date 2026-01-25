@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Statistic, List, Typography } from 'antd';
+import { Card, Row, Col, Statistic, List, Typography, Badge } from 'antd';
 import { MessageOutlined, UserOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabase';
 import dayjs from 'dayjs';
@@ -26,10 +26,12 @@ export default function DashboardPage() {
         avgResponseTime: '0m',
     });
     const [recentMessages, setRecentMessages] = useState<any[]>([]);
+    const [upcomingTasks, setUpcomingTasks] = useState<any[]>([]);
 
     useEffect(() => {
         fetchStats();
         fetchRecentMessages();
+        fetchUpcomingTasks();
     }, []);
 
     async function fetchStats() {
@@ -72,6 +74,22 @@ export default function DashboardPage() {
             setRecentMessages(data || []);
         } catch (error) {
             console.error('Error fetching recent messages:', error);
+        }
+    }
+
+    async function fetchUpcomingTasks() {
+        try {
+            const { data } = await supabase
+                .from('tasks')
+                .select('*, contacts(*)')
+                .eq('status', 'pending')
+                .gte('due_date', new Date().toISOString())
+                .order('due_date', { ascending: true })
+                .limit(5);
+
+            setUpcomingTasks(data || []);
+        } catch (error) {
+            console.error('Error fetching upcoming tasks:', error);
         }
     }
 
@@ -120,20 +138,43 @@ export default function DashboardPage() {
                 </Col>
             </Row>
 
-            <Card title="Recent Messages" variant="borderless">
-                <List
-                    dataSource={recentMessages}
-                    renderItem={(item: any) => (
-                        <List.Item>
-                            <List.Item.Meta
-                                title={item.conversations?.contacts?.name || 'Unknown'}
-                                description={item.content}
-                            />
-                            <div>{dayjs(item.timestamp).fromNow()}</div>
-                        </List.Item>
-                    )}
-                />
-            </Card>
+            <Row gutter={16}>
+                <Col span={12}>
+                    <Card title="Son Mesajlar" variant="borderless">
+                        <List
+                            dataSource={recentMessages}
+                            renderItem={(item: any) => (
+                                <List.Item>
+                                    <List.Item.Meta
+                                        title={item.conversations?.contacts?.name || 'Bilinmiyor'}
+                                        description={item.content}
+                                    />
+                                    <div>{dayjs(item.timestamp).fromNow()}</div>
+                                </List.Item>
+                            )}
+                        />
+                    </Card>
+                </Col>
+                <Col span={12}>
+                    <Card title="Günü Gelen Görevler" variant="borderless" extra={<Badge count={upcomingTasks.length} />}>
+                        <List
+                            dataSource={upcomingTasks}
+                            renderItem={(item: any) => (
+                                <List.Item>
+                                    <List.Item.Meta
+                                        avatar={<ClockCircleOutlined style={{ color: '#faad14' }} />}
+                                        title={item.contacts?.name || 'İsimsiz'}
+                                        description={item.note}
+                                    />
+                                    <div style={{ fontSize: '12px', color: '#8c8c8c' }}>
+                                        {dayjs(item.due_date).format('DD MMM HH:mm')}
+                                    </div>
+                                </List.Item>
+                            )}
+                        />
+                    </Card>
+                </Col>
+            </Row>
         </div>
     );
 }

@@ -75,6 +75,11 @@ const items: MenuItemType[] = [
         icon: <RobotOutlined />,
         label: 'AI Training',
     },
+    {
+        key: '/settings/forms',
+        icon: <ProjectOutlined />,
+        label: 'Forms',
+    },
 ];
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {

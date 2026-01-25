@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Input, Button, Empty, Spin, Avatar, App, Image, Modal } from 'antd';
-import { SendOutlined, UserOutlined, BulbOutlined, FileTextOutlined, DownloadOutlined } from '@ant-design/icons';
+import { Input, Button, Empty, Spin, Avatar, App, Image, Modal, Tabs, List, DatePicker, Checkbox, Space, Badge } from 'antd';
+import { SendOutlined, UserOutlined, BulbOutlined, FileTextOutlined, DownloadOutlined, CalendarOutlined, PlusOutlined, DeleteOutlined, LayoutOutlined } from '@ant-design/icons';
 import { MainContainer, ChatContainer, MessageList, Message, MessageInput } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
 import dayjs from 'dayjs';
+import type { Dayjs } from 'dayjs';
 
 interface MessageThreadProps {
     conversation: ConversationWithContact | null;
@@ -18,6 +19,91 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [inputValue, setInputValue] = useState('');
     const [sending, setSending] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
+    const [tasks, setTasks] = useState<any[]>([]);
+    const [tasksLoading, setTasksLoading] = useState(false);
+    const [newTaskNote, setNewTaskNote] = useState('');
+    const [dueDate, setDueDate] = useState<Dayjs | null>(null);
+
+    useEffect(() => {
+        if (conversation.contact?.id) {
+            fetchTasks(conversation.contact.id);
+        }
+    }, [conversation.contact?.id]);
+
+    async function fetchTasks(contactId: string) {
+        setTasksLoading(true);
+        const { data, error } = await supabase
+            .from('tasks')
+            .select('*')
+            .eq('contact_id', contactId)
+            .order('due_date', { ascending: true });
+        if (data) setTasks(data);
+        setTasksLoading(false);
+    }
+
+    const addTask = async () => {
+        if (!newTaskNote || !dueDate || !conversation.contact?.id) return;
+
+        const { error } = await supabase.from('tasks').insert([{
+            contact_id: conversation.contact.id,
+            note: newTaskNote,
+            due_date: dueDate.toISOString(),
+            status: 'pending'
+        }]);
+
+        if (error) message.error('Görev eklenemedi');
+        else {
+            message.success('Görev eklendi');
+            setNewTaskNote('');
+            setDueDate(null);
+            fetchTasks(conversation.contact.id);
+        }
+    };
+
+    const toggleTask = async (taskId: string, currentStatus: string) => {
+        const newStatus = currentStatus === 'pending' ? 'completed' : 'pending';
+        const { error } = await supabase.from('tasks').update({ status: newStatus }).eq('id', taskId);
+        if (error) message.error('Durum güncellenemedi');
+        else fetchTasks(conversation.contact!.id);
+    };
+
+    const deleteTask = async (taskId: string) => {
+        const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+        if (error) message.error('Silinemedi');
+        else fetchTasks(conversation.contact!.id);
+    };
+
+    const [templateModalOpen, setTemplateModalOpen] = useState(false);
+    const [templateLoading, setTemplateLoading] = useState(false);
+
+    const templates = [
+        { name: 'hello_world', label: 'Merhaba (Hello World)', lang: 'en_US' },
+        { name: 'sample_shipping_confirmation', label: 'Kargo Onayı', lang: 'en_US' },
+    ];
+
+    const sendTemplate = async (templateName: string, lang: string) => {
+        if (!conversation?.contact?.phone) return;
+        setTemplateLoading(true);
+        try {
+            const response = await fetch('/api/whatsapp-template', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to: conversation.contact.phone,
+                    templateName,
+                    languageCode: lang
+                })
+            });
+            if (!response.ok) throw new Error('Template failed');
+            message.success('Şablon başarıyla gönderildi');
+            setTemplateModalOpen(false);
+        } catch (err) {
+            message.error('Şablon gönderilemedi');
+        } finally {
+            setTemplateLoading(false);
+        }
+    };
+
     const { message } = App.useApp();
 
     useEffect(() => {
@@ -158,106 +244,214 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     }
 
     return (
-        <div style={{ height: '100%', background: 'white', display: 'flex', flexDirection: 'column' }}>
-            {/* Header */}
-            <div
-                style={{
-                    padding: '16px 24px',
-                    borderBottom: '1px solid #f0f0f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                }}
-            >
-                <Avatar icon={<UserOutlined />} size={40} />
-                <div>
-                    <div style={{ fontWeight: 600, fontSize: 16 }}>{conversation.contact?.name}</div>
-                    <div style={{ color: '#8c8c8c', fontSize: 12 }}>{conversation.contact?.phone}</div>
+        <div style={{ height: '100%', display: 'flex' }}>
+            {/* Main Chat Area */}
+            <div style={{ flex: 1, background: 'white', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                {/* Header */}
+                <div
+                    style={{
+                        padding: '16px 24px',
+                        borderBottom: '1px solid #f0f0f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                    }}
+                >
+                    <Avatar icon={<UserOutlined />} size={40} />
+                    <div>
+                        <div style={{ fontWeight: 600, fontSize: 16 }}>{conversation?.contact?.name}</div>
+                        <div style={{ color: '#8c8c8c', fontSize: 12 }}>{conversation?.contact?.phone}</div>
+                    </div>
+                </div>
+
+                {/* Messages */}
+                <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
+                    <MainContainer>
+                        <ChatContainer>
+                            <MessageList>
+                                {messages.map((msg) => (
+                                    <Message
+                                        key={msg.id}
+                                        model={{
+                                            message: msg.content,
+                                            sentTime: dayjs(msg.timestamp).format('HH:mm'),
+                                            sender: msg.sender === 'agent' ? 'You' : conversation?.contact?.name || 'Customer',
+                                            direction: msg.sender === 'agent' ? 'outgoing' : 'incoming',
+                                            position: 'single',
+                                        }}
+                                    >
+                                        {msg.media_url && (
+                                            <div style={{ marginTop: 8, maxWidth: '100%' }}>
+                                                {msg.media_type === 'image' ? (
+                                                    <Image
+                                                        src={msg.media_url}
+                                                        alt="WhatsApp Image"
+                                                        width={200}
+                                                        style={{ borderRadius: 8, cursor: 'pointer' }}
+                                                    />
+                                                ) : (
+                                                    <Button
+                                                        icon={<FileTextOutlined />}
+                                                        href={msg.media_url}
+                                                        target="_blank"
+                                                        size="small"
+                                                        style={{ display: 'flex', alignItems: 'center' }}
+                                                    >
+                                                        {msg.content || 'Dosyayı İndir'} <DownloadOutlined style={{ marginLeft: 4 }} />
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
+                                    </Message>
+                                ))}
+                            </MessageList>
+                        </ChatContainer>
+                    </MainContainer>
+                </div>
+
+                {/* Input */}
+                <div style={{ padding: 16, borderTop: '1px solid #f0f0f0' }}>
+                    <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                        <Button
+                            icon={<BulbOutlined />}
+                            onClick={handleAiSuggest}
+                            loading={aiLoading}
+                            size="small"
+                        >
+                            AI Öneri
+                        </Button>
+                        <Button
+                            icon={<LayoutOutlined />}
+                            onClick={() => setTemplateModalOpen(true)}
+                            size="small"
+                        >
+                            Şablon
+                        </Button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 8 }}>
+                        <Input.TextArea
+                            value={inputValue}
+                            onChange={(e) => setInputValue(e.target.value)}
+                            onPressEnter={(e) => {
+                                if (!e.shiftKey) {
+                                    e.preventDefault();
+                                    handleSend();
+                                }
+                            }}
+                            placeholder="Mesaj yazın veya AI'dan öneri alın..."
+                            autoSize={{ minRows: 1, maxRows: 4 }}
+                            style={{ flex: 1 }}
+                        />
+                        <Button
+                            type="primary"
+                            icon={<SendOutlined />}
+                            onClick={handleSend}
+                            loading={sending}
+                            disabled={!inputValue.trim()}
+                        >
+                            Gönder
+                        </Button>
+                    </div>
                 </div>
             </div>
 
-            {/* Messages */}
-            <div style={{ flex: 1, overflow: 'auto', padding: 16 }}>
-                <MainContainer>
-                    <ChatContainer>
-                        <MessageList>
-                            {messages.map((msg) => (
-                                <Message
-                                    key={msg.id}
-                                    model={{
-                                        message: msg.content,
-                                        sentTime: dayjs(msg.timestamp).format('HH:mm'),
-                                        sender: msg.sender === 'agent' ? 'You' : conversation.contact?.name || 'Customer',
-                                        direction: msg.sender === 'agent' ? 'outgoing' : 'incoming',
-                                        position: 'single',
-                                    }}
-                                >
-                                    {msg.media_url && (
-                                        <div style={{ marginTop: 8, maxWidth: '100%' }}>
-                                            {msg.media_type === 'image' ? (
-                                                <Image
-                                                    src={msg.media_url}
-                                                    alt="WhatsApp Image"
-                                                    width={200}
-                                                    style={{ borderRadius: 8, cursor: 'pointer' }}
+            {/* Sidebar with Profile & Tasks */}
+            <div style={{ width: 300, borderLeft: '1px solid #f0f0f0', background: '#fff' }}>
+                <Tabs defaultActiveKey="1" items={[
+                    {
+                        key: '1',
+                        label: 'Profil',
+                        children: (
+                            <div style={{ padding: 20, textAlign: 'center' }}>
+                                <Avatar size={64} icon={<UserOutlined />} style={{ marginBottom: 16 }} />
+                                <div style={{ fontSize: 18, fontWeight: 600 }}>{conversation?.contact?.name}</div>
+                                <div style={{ color: '#8c8c8c', marginBottom: 24 }}>{conversation?.contact?.phone}</div>
+                                <Badge status="processing" text="Aktif Müşteri" />
+                            </div>
+                        )
+                    },
+                    {
+                        key: '2',
+                        label: 'Görevler',
+                        children: (
+                            <div style={{ padding: '0 12px' }}>
+                                <div style={{ marginBottom: 16 }}>
+                                    <Input
+                                        placeholder="Görevi yaz..."
+                                        value={newTaskNote}
+                                        onChange={e => setNewTaskNote(e.target.value)}
+                                        style={{ marginBottom: 8 }}
+                                    />
+                                    <Space.Compact style={{ width: '100%' }}>
+                                        <DatePicker
+                                            showTime
+                                            placeholder="Zaman seç"
+                                            value={dueDate}
+                                            onChange={val => setDueDate(val)}
+                                            style={{ flex: 1 }}
+                                        />
+                                        <Button type="primary" icon={<PlusOutlined />} onClick={addTask} />
+                                    </Space.Compact>
+                                </div>
+                                <List
+                                    loading={tasksLoading}
+                                    dataSource={tasks}
+                                    size="small"
+                                    renderItem={(task: any) => (
+                                        <List.Item
+                                            style={{ padding: '8px 4px' }}
+                                            actions={[
+                                                <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={() => deleteTask(task.id)} />
+                                            ]}
+                                        >
+                                            <Space align="start">
+                                                <Checkbox
+                                                    checked={task.status === 'completed'}
+                                                    onChange={() => toggleTask(task.id, task.status)}
                                                 />
-                                            ) : (
-                                                <Button
-                                                    icon={<FileTextOutlined />}
-                                                    href={msg.media_url}
-                                                    target="_blank"
-                                                    size="small"
-                                                    style={{ display: 'flex', alignItems: 'center' }}
-                                                >
-                                                    {msg.content || 'Dosyayı İndir'} <DownloadOutlined style={{ marginLeft: 4 }} />
-                                                </Button>
-                                            )}
-                                        </div>
+                                                <div style={{ textDecoration: task.status === 'completed' ? 'line-through' : 'none' }}>
+                                                    <div style={{ fontSize: 13 }}>{task.note}</div>
+                                                    <div style={{ fontSize: 11, color: dayjs(task.due_date).isBefore(dayjs()) ? '#ff4d4f' : '#8c8c8c' }}>
+                                                        {dayjs(task.due_date).format('DD MMM HH:mm')}
+                                                    </div>
+                                                </div>
+                                            </Space>
+                                        </List.Item>
                                     )}
-                                </Message>
-                            ))}
-                        </MessageList>
-                    </ChatContainer>
-                </MainContainer>
+                                />
+                            </div>
+                        )
+                    }
+                ]} />
             </div>
 
-            {/* Input */}
-            <div style={{ padding: 16, borderTop: '1px solid #f0f0f0' }}>
-                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-                    <Button
-                        icon={<BulbOutlined />}
-                        onClick={handleAiSuggest}
-                        loading={aiLoading}
-                        size="small"
-                    >
-                        AI Öneri
-                    </Button>
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <Input.TextArea
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        onPressEnter={(e) => {
-                            if (!e.shiftKey) {
-                                e.preventDefault();
-                                handleSend();
-                            }
-                        }}
-                        placeholder="Mesaj yazın veya AI'dan öneri alın..."
-                        autoSize={{ minRows: 1, maxRows: 4 }}
-                        style={{ flex: 1 }}
-                    />
-                    <Button
-                        type="primary"
-                        icon={<SendOutlined />}
-                        onClick={handleSend}
-                        loading={sending}
-                        disabled={!inputValue.trim()}
-                    >
-                        Gönder
-                    </Button>
-                </div>
-            </div>
+            <Modal
+                title="WhatsApp Şablonu Gönder"
+                open={templateModalOpen}
+                onCancel={() => setTemplateModalOpen(false)}
+                footer={null}
+            >
+                <List
+                    dataSource={templates}
+                    renderItem={item => (
+                        <List.Item
+                            actions={[
+                                <Button
+                                    key="send"
+                                    type="primary"
+                                    onClick={() => sendTemplate(item.name, item.lang)}
+                                    loading={templateLoading}
+                                >
+                                    Gönder
+                                </Button>
+                            ]}
+                        >
+                            <List.Item.Meta title={item.label} description={`Template: ${item.name}`} />
+                        </List.Item>
+                    )}
+                />
+            </Modal>
         </div>
     );
 }
