@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Input, Button, Empty, Spin, Avatar, message } from 'antd';
+import { Input, Button, Empty, Spin, Avatar, App } from 'antd';
 import { SendOutlined, UserOutlined, BulbOutlined } from '@ant-design/icons';
 import { MainContainer, ChatContainer, MessageList, Message, MessageInput } from '@chatscope/chat-ui-kit-react';
 import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
@@ -18,6 +18,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [inputValue, setInputValue] = useState('');
     const [sending, setSending] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
+    const { message } = App.useApp();
 
     useEffect(() => {
         if (!conversation) {

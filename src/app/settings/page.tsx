@@ -1,13 +1,14 @@
 'use client';
 
 import React from 'react';
-import { Card, Form, Input, Button, Switch, Divider, Typography, Space, message } from 'antd';
+import { Card, Form, Input, Button, Switch, Divider, Typography, Space, App } from 'antd';
 import { SaveOutlined, BellOutlined, GlobalOutlined, LockOutlined } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
 
 export default function SettingsPage() {
     const [form] = Form.useForm();
+    const { message } = App.useApp();
 
     const handleSave = () => {
         message.success('Settings saved successfully!');

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Input, Button, Select, Table, Tag, Space, Typography, message, Modal, Statistic, Row, Col, Alert } from 'antd';
+import { Card, Form, Input, Button, Select, Table, Tag, Space, Typography, App, Modal, Statistic, Row, Col, Alert } from 'antd';
 import { SendOutlined, TeamOutlined, HistoryOutlined, SoundOutlined } from '@ant-design/icons';
 import { supabase, type Contact, type Broadcast } from '@/lib/supabase';
 import dayjs from 'dayjs';
@@ -21,6 +21,7 @@ const STAGES = [
 
 export default function BroadcastingPage() {
     const [form] = Form.useForm();
+    const { message } = App.useApp();
     const [broadcasts, setBroadcasts] = useState<Broadcast[]>([]);
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);

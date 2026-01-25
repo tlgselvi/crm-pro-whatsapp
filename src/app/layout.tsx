@@ -1,5 +1,6 @@
+import "@ant-design/v5-patch-for-react-19";
 import type { Metadata } from "next";
-import { ConfigProvider } from "antd";
+import { ConfigProvider, App } from "antd";
 import MainLayout from "@/components/MainLayout";
 import "./globals.css";
 
@@ -24,7 +25,9 @@ export default function RootLayout({
             },
           }}
         >
-          <MainLayout>{children}</MainLayout>
+          <App>
+            <MainLayout>{children}</MainLayout>
+          </App>
         </ConfigProvider>
       </body>
     </html>
