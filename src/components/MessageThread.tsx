@@ -125,14 +125,17 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                 }),
             });
 
-            if (!response.ok) throw new Error('AI suggestion failed');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.details || errorData.error || 'AI suggestion failed');
+            }
 
             const data = await response.json();
             setInputValue(data.suggestion);
             message.success('AI önerisi hazır! İstersen düzenle ve gönder.');
-        } catch (error) {
+        } catch (error: any) {
             console.error('AI suggestion error:', error);
-            message.error('AI önerisi alınamadı. API key kontrol edin.');
+            message.error(`AI önerisi alınamadı: ${error.message}`);
         } finally {
             setAiLoading(false);
         }

@@ -5,8 +5,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 export async function POST(request: NextRequest) {
     try {
         const { lastMessage, customerName } = await request.json();
+        console.log('AI Suggest Request:', { lastMessage, customerName, hasKey: !!GEMINI_API_KEY });
 
         if (!GEMINI_API_KEY) {
+            console.error('AI Suggest Error: Gemini API key is missing');
             return NextResponse.json(
                 { error: 'Gemini API key not configured' },
                 { status: 500 }
@@ -28,7 +30,7 @@ Kuralllar:
 Müşteriye uygun bir yanıt yaz:`;
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             {
                 method: 'POST',
                 headers: {
@@ -53,11 +55,15 @@ Müşteriye uygun bir yanıt yaz:`;
         );
 
         if (!response.ok) {
-            const error = await response.text();
-            console.error('Gemini API error:', error);
+            const errorText = await response.text();
+            console.error('Gemini API Error Response:', {
+                status: response.status,
+                statusText: response.statusText,
+                body: errorText
+            });
             return NextResponse.json(
-                { error: 'Failed to generate AI suggestion' },
-                { status: 500 }
+                { error: 'Failed to generate AI suggestion', details: errorText },
+                { status: response.status }
             );
         }
 
