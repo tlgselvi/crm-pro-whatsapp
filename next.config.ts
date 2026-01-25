@@ -7,9 +7,12 @@ const withPWA = require('next-pwa')({
   skipWaiting: true,
 });
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+const nextConfig: NextConfig = {
   output: 'standalone',
+  // Next.js 16 requires turbopack config if using webpack plugins (like next-pwa)
+  turbopack: {
+    // Empty config allows Next.js to determine the best strategy or silences the webpack error
+  },
   async headers() {
     return [
       {
@@ -25,5 +28,4 @@ const nextConfig = {
   },
 };
 
-module.exports = withPWA(nextConfig);
-
+export default withPWA(nextConfig);
