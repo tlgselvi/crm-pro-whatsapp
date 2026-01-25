@@ -56,11 +56,45 @@ export default function DashboardPage() {
                 .from('messages')
                 .select('*', { count: 'exact', head: true });
 
+            // Calculate Avg Response Time
+            let avgTime = '0m';
+            const { data: messages } = await supabase
+                .from('messages')
+                .select('timestamp, sender, conversation_id')
+                .order('timestamp', { ascending: true })
+                .limit(1000); // Analyze last 1000 messages for performance
+
+            if (messages && messages.length > 0) {
+                let totalResponseTime = 0;
+                let responseCount = 0;
+                const lastCustomerMsg: { [key: string]: string } = {};
+
+                messages.forEach(msg => {
+                    if (msg.sender === 'customer') {
+                        lastCustomerMsg[msg.conversation_id] = msg.timestamp;
+                    } else if (msg.sender === 'agent' && lastCustomerMsg[msg.conversation_id]) {
+                        const start = dayjs(lastCustomerMsg[msg.conversation_id]);
+                        const end = dayjs(msg.timestamp);
+                        const diffInMinutes = end.diff(start, 'minute');
+                        if (diffInMinutes >= 0 && diffInMinutes < 60 * 24) { // Filter outliers > 24h
+                            totalResponseTime += diffInMinutes;
+                            responseCount++;
+                        }
+                        delete lastCustomerMsg[msg.conversation_id];
+                    }
+                });
+
+                if (responseCount > 0) {
+                    const avg = Math.round(totalResponseTime / responseCount);
+                    avgTime = avg < 60 ? `${avg}dk` : `${Math.floor(avg / 60)}s ${avg % 60}dk`;
+                }
+            }
+
             setStats({
                 totalContacts: contactCount || 0,
                 activeConversations: convCount || 0,
                 totalMessages: msgCount || 0,
-                avgResponseTime: '5m', // Placeholder
+                avgResponseTime: avgTime,
             });
         } catch (error) {
             console.error('Error fetching stats:', error);

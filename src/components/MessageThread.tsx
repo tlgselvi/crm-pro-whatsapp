@@ -80,10 +80,29 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [templateModalOpen, setTemplateModalOpen] = useState(false);
     const [templateLoading, setTemplateLoading] = useState(false);
 
-    const templates = [
-        { name: 'hello_world', label: 'Merhaba (Hello World)', lang: 'en_US' },
-        { name: 'sample_shipping_confirmation', label: 'Kargo Onayı', lang: 'en_US' },
-    ];
+    const [templates, setTemplates] = useState<{ name: string, status: string, language: string }[]>([]);
+
+    useEffect(() => {
+        if (templateModalOpen) {
+            fetchTemplates();
+        }
+    }, [templateModalOpen]);
+
+    async function fetchTemplates() {
+        setTemplateLoading(true);
+        try {
+            const res = await fetch('/api/whatsapp-templates');
+            const data = await res.json();
+            if (data.data) {
+                setTemplates(data.data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch templates:', error);
+            message.error('Şablonlar yüklenemedi');
+        } finally {
+            setTemplateLoading(false);
+        }
+    }
 
     const sendTemplate = async (templateName: string, lang: string) => {
         if (!conversation?.contact?.phone) return;
@@ -449,14 +468,17 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                                 <Button
                                     key="send"
                                     type="primary"
-                                    onClick={() => sendTemplate(item.name, item.lang)}
+                                    onClick={() => sendTemplate(item.name, item.language)}
                                     loading={templateLoading}
                                 >
                                     Gönder
                                 </Button>
                             ]}
                         >
-                            <List.Item.Meta title={item.label} description={`Template: ${item.name}`} />
+                            <List.Item.Meta
+                                title={<Text strong>{item.name}</Text>}
+                                description={`Durum: ${item.status} - Dil: ${item.language}`}
+                            />
                         </List.Item>
                     )}
                 />
