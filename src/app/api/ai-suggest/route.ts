@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -14,6 +15,29 @@ export async function POST(request: NextRequest) {
                 { status: 500 }
             );
         }
+
+        // Initialize Server Client
+        const cookieStore = await cookies();
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                    setAll(cookiesToSet) {
+                        try {
+                            cookiesToSet.forEach(({ name, value, options }) =>
+                                cookieStore.set(name, value, options)
+                            );
+                        } catch {
+                            // Ignored
+                        }
+                    },
+                },
+            }
+        );
 
         // 🧠 FETCH KNOWLEDGE BASE AND SETTINGS
         const { data: settings } = await supabase.from('ai_settings').select('*').single();

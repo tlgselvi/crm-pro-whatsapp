@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { createServerClient } from '@supabase/ssr';
+import { cookies } from 'next/headers';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 
@@ -83,6 +84,34 @@ export async function POST(request: NextRequest) {
         if (!persona.system_prompt || !persona.suggested_faqs) {
             throw new Error('Persona structure is incomplete');
         }
+        if (!persona.system_prompt || !persona.suggested_faqs) {
+            throw new Error('Persona structure is incomplete');
+        }
+
+        // Initialize Server Client
+        const cookieStore = await cookies();
+        const supabase = createServerClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    getAll() {
+                        return cookieStore.getAll();
+                    },
+                    setAll(cookiesToSet) {
+                        try {
+                            cookiesToSet.forEach(({ name, value, options }) =>
+                                cookieStore.set(name, value, options)
+                            );
+                        } catch {
+                            // The `setAll` method was called from a Server Component.
+                            // This can be ignored if you have middleware refreshing
+                            // user sessions.
+                        }
+                    },
+                },
+            }
+        );
 
         // 💾 ATOMIC-LIKE DATABASE OPERATIONS
         // 1. Update AI Settings
