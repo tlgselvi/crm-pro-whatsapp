@@ -107,7 +107,7 @@ export default function SalesbotPage() {
                 <Button type="primary">+ Add New Rule</Button>
             </div>
 
-            <Card bordered={false}>
+            <Card variant="borderless">
                 <Table
                     dataSource={rules}
                     columns={columns}
@@ -119,7 +119,7 @@ export default function SalesbotPage() {
 
             <Card
                 title="📊 Salesbot Analytics"
-                bordered={false}
+                variant="borderless"
                 style={{ marginTop: 24 }}
             >
                 <Space direction="vertical" size="middle" style={{ width: '100%' }}>
@@ -140,7 +140,7 @@ export default function SalesbotPage() {
 
             <Card
                 title="💡 How It Works"
-                bordered={false}
+                variant="borderless"
                 style={{ marginTop: 24 }}
             >
                 <ol style={{ paddingLeft: 20 }}>

@@ -171,6 +171,7 @@ export default function PipelinePage() {
                                                             ref={provided.innerRef}
                                                             {...provided.draggableProps}
                                                             {...provided.dragHandleProps}
+                                                            variant="outlined"
                                                             style={{
                                                                 marginBottom: 12,
                                                                 cursor: 'grab',

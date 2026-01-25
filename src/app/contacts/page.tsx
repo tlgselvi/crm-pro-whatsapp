@@ -94,7 +94,7 @@ export default function ContactsPage() {
                 </Button>
             </div>
 
-            <Card bordered={false}>
+            <Card variant="borderless">
                 <Table
                     dataSource={contacts}
                     columns={columns}

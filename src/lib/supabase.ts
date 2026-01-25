@@ -48,6 +48,15 @@ export interface Message {
   platform: 'whatsapp' | 'web' | 'internal';
 }
 
+export interface Broadcast {
+  id: string;
+  name: string;
+  content: string;
+  target_stage: string;
+  status: string;
+  created_at: string;
+}
+
 // Extended types with relations
 export interface ConversationWithContact extends Conversation {
   contact: Contact;

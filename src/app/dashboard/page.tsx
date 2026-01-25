@@ -5,6 +5,9 @@ import { Card, Row, Col, Statistic, List, Typography } from 'antd';
 import { MessageOutlined, UserOutlined, CheckCircleOutlined, ClockCircleOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabase';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
+
+dayjs.extend(relativeTime);
 
 const { Title } = Typography;
 
@@ -78,7 +81,7 @@ export default function DashboardPage() {
 
             <Row gutter={16} style={{ marginBottom: 24 }}>
                 <Col span={6}>
-                    <Card>
+                    <Card variant="outlined">
                         <Statistic
                             title="Total Contacts"
                             value={stats.totalContacts}
@@ -88,7 +91,7 @@ export default function DashboardPage() {
                     </Card>
                 </Col>
                 <Col span={6}>
-                    <Card>
+                    <Card variant="outlined">
                         <Statistic
                             title="Active Conversations"
                             value={stats.activeConversations}
@@ -98,7 +101,7 @@ export default function DashboardPage() {
                     </Card>
                 </Col>
                 <Col span={6}>
-                    <Card>
+                    <Card variant="outlined">
                         <Statistic
                             title="Total Messages"
                             value={stats.totalMessages}
@@ -107,7 +110,7 @@ export default function DashboardPage() {
                     </Card>
                 </Col>
                 <Col span={6}>
-                    <Card>
+                    <Card variant="outlined">
                         <Statistic
                             title="Avg Response Time"
                             value={stats.avgResponseTime}
@@ -117,7 +120,7 @@ export default function DashboardPage() {
                 </Col>
             </Row>
 
-            <Card title="Recent Messages" bordered={false}>
+            <Card title="Recent Messages" variant="borderless">
                 <List
                     dataSource={recentMessages}
                     renderItem={(item: any) => (

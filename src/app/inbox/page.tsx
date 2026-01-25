@@ -14,8 +14,8 @@ export default function InboxPage() {
             <Col span={8}>
                 <Card
                     title="Conversations"
-                    bordered={false}
-                    bodyStyle={{ padding: 0, height: 'calc(100vh - 176px)', overflow: 'auto' }}
+                    variant="borderless"
+                    styles={{ body: { padding: 0, height: 'calc(100vh - 176px)', overflow: 'auto' } }}
                 >
                     <ConversationList
                         onSelectConversation={setSelectedConversation}
@@ -24,7 +24,7 @@ export default function InboxPage() {
                 </Card>
             </Col>
             <Col span={16}>
-                <Card bordered={false} bodyStyle={{ padding: 0, height: 'calc(100vh - 176px)' }}>
+                <Card variant="borderless" styles={{ body: { padding: 0, height: 'calc(100vh - 176px)' } }}>
                     <MessageThread conversation={selectedConversation} />
                 </Card>
             </Col>

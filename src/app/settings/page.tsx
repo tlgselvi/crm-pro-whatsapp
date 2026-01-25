@@ -18,7 +18,7 @@ export default function SettingsPage() {
             <Title level={2} style={{ marginBottom: 24 }}>Settings</Title>
 
             <Space direction="vertical" size="large" style={{ width: '100%' }}>
-                <Card title="WhatsApp Configuration" bordered={false}>
+                <Card title="WhatsApp Configuration" variant="borderless">
                     <Form form={form} layout="vertical" onFinish={handleSave}>
                         <Form.Item
                             label="Phone Number ID"
@@ -52,7 +52,7 @@ export default function SettingsPage() {
                     </Form>
                 </Card>
 
-                <Card title="Notifications" bordered={false}>
+                <Card title="Notifications" variant="borderless">
                     <Space direction="vertical" style={{ width: '100%' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <div>
@@ -76,7 +76,7 @@ export default function SettingsPage() {
                     </Space>
                 </Card>
 
-                <Card title="Security" bordered={false}>
+                <Card title="Security" variant="borderless">
                     <Form layout="vertical">
                         <Form.Item label="Current Password">
                             <Input.Password placeholder="Enter current password" />
@@ -98,7 +98,7 @@ export default function SettingsPage() {
                     </Form>
                 </Card>
 
-                <Card title="About" bordered={false}>
+                <Card title="About" variant="borderless">
                     <Space direction="vertical">
                         <Text><strong>Version:</strong> 1.0.0</Text>
                         <Text><strong>Build:</strong> Production</Text>

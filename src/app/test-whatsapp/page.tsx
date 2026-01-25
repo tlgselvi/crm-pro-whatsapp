@@ -123,7 +123,7 @@ export default function WhatsAppTestPage() {
 
             <div style={{ display: 'flex', gap: 24, marginTop: 24 }}>
                 {/* Left: Test Form */}
-                <Card title="📱 Test Mesajı Gönder" style={{ flex: 1 }}>
+                <Card title="📱 Test Mesajı Gönder" variant="outlined" style={{ flex: 1 }}>
                     <Space direction="vertical" style={{ width: '100%' }} size="large">
                         <div>
                             <Text strong>Telefon Numarası (Simüle)</Text>
@@ -204,6 +204,7 @@ export default function WhatsAppTestPage() {
                             Konuşma Geçmişi (Bu Session)
                         </Space>
                     }
+                    variant="outlined"
                     style={{ flex: 1 }}
                 >
                     {messages.length === 0 ? (
@@ -252,7 +253,7 @@ export default function WhatsAppTestPage() {
             </div>
 
             {/* Instructions */}
-            <Card title="📖 Nasıl Kullanılır?" style={{ marginTop: 24 }}>
+            <Card title="📖 Nasıl Kullanılır?" variant="outlined" style={{ marginTop: 24 }}>
                 <ol style={{ paddingLeft: 20 }}>
                     <li>Yukarıdaki formu kullanarak test mesajı gönderin</li>
                     <li>Mesaj <code>/api/whatsapp-webhook</code> endpoint'ine POST edilir</li>
