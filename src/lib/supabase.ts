@@ -24,6 +24,7 @@ export interface Contact {
   name: string;
   phone: string;
   email?: string;
+  stage: string;
   created_at: string;
   updated_at: string;
 }

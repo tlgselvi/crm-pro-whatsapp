@@ -13,6 +13,7 @@
     "@ant-design/pro-components": "^2.8.10",
     "@chatscope/chat-ui-kit-react": "^2.1.1",
     "@chatscope/chat-ui-kit-styles": "^1.4.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@supabase/supabase-js": "^2.91.1",
     "antd": "^5.29.3",
     "dayjs": "^1.11.19",

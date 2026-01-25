@@ -8,6 +8,7 @@ import {
     UserOutlined,
     SettingOutlined,
     WhatsAppOutlined,
+    ProjectOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import type { MenuProps } from 'antd';
@@ -26,6 +27,11 @@ const items: MenuItemType[] = [
         key: '/dashboard',
         icon: <DashboardOutlined />,
         label: 'Dashboard',
+    },
+    {
+        key: '/pipeline',
+        icon: <ProjectOutlined />,
+        label: 'Pipeline',
     },
     {
         key: '/inbox',
