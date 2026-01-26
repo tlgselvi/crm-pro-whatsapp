@@ -23,13 +23,15 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [sending, setSending] = useState(false);
 
     // Vercel AI SDK Integration
-    const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages } = useChat({
-        api: '/api/chat',
-        onError: (err: Error) => {
-            console.error('AI SDK Error:', err);
+    const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages, error: aiError } = useChat();
+
+    // Handle AI Errors
+    useEffect(() => {
+        if (aiError) {
+            console.error('AI SDK Error:', aiError);
             message.error('AI servisi şu an yanıt veremiyor.');
-        },
-    });
+        }
+    }, [aiError]);
 
     // Stream content to input
     useEffect(() => {
