@@ -1,4 +1,5 @@
 'use client';
+import "@ant-design/v5-patch-for-react-19";
 
 import React, { useState, useEffect } from 'react';
 import { Card, Input, Button, Typography, Space, List, Tag, Modal, Form, App, Divider, Empty, Tooltip } from 'antd';
@@ -10,9 +11,9 @@ import {
     ClearOutlined,
     ThunderboltOutlined,
     BulbOutlined,
-    SafetyCertificateOutlined,
+    CheckCircleOutlined,
     GlobalOutlined,
-    MagicOutlined,
+    ExperimentOutlined,
     RobotOutlined
 } from '@ant-design/icons';
 import {
@@ -218,9 +219,9 @@ export default function KnowledgePage() {
             <Card className="glass-card" style={{ marginTop: 40, border: '1px solid rgba(168, 199, 250, 0.2)' }}>
                 <Title level={4}><BulbOutlined /> Nasıl Eğitmeli?</Title>
                 <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text><SafetyCertificateOutlined style={{ color: '#52c41a' }} /> **Web'den Öğret**: Şirket sitenizin linkini verin, AI işinize yarayacak bilgileri saniyeler içinde ayıklasın.</Text>
-                    <Text><SafetyCertificateOutlined style={{ color: '#52c41a' }} /> **AI ile Geliştir**: Kısa notlar yazın ve "Magic Refine" butonuna basın. AI bunu botun en iyi anlayacağı formata sokar.</Text>
-                    <Text><SafetyCertificateOutlined style={{ color: '#52c41a' }} /> **Prompt Bağlantısı**: Buraya eklediğiniz her şey, botun genel bilgisine ve otomasyonlardaki AI Agent kararlarına doğrudan etki eder.</Text>
+                    <Text><CheckCircleOutlined style={{ color: '#52c41a' }} /> **Web'den Öğret**: Şirket sitenizin linkini verin, AI işinize yarayacak bilgileri saniyeler içinde ayıklasın.</Text>
+                    <Text><CheckCircleOutlined style={{ color: '#52c41a' }} /> **AI ile Geliştir**: Kısa notlar yazın ve "Magic Refine" butonuna basın. AI bunu botun en iyi anlayacağı formata sokar.</Text>
+                    <Text><CheckCircleOutlined style={{ color: '#52c41a' }} /> **Prompt Bağlantısı**: Buraya eklediğiniz her şey, botun genel bilgisine ve otomasyonlardaki AI Agent kararlarına doğrudan etki eder.</Text>
                 </Space>
             </Card>
 
@@ -245,7 +246,7 @@ export default function KnowledgePage() {
                                 <Button
                                     type="link"
                                     size="small"
-                                    icon={<MagicOutlined />}
+                                    icon={<ExperimentOutlined />}
                                     onClick={handleMagicRefine}
                                     loading={isRefining}
                                 >
@@ -273,7 +274,7 @@ export default function KnowledgePage() {
                 footer={null}
                 destroyOnClose
             >
-                <Form scrapeForm={scrapeForm} layout="vertical" onFinish={handleScrape}>
+                <Form form={scrapeForm} layout="vertical" onFinish={handleScrape}>
                     <Paragraph>
                         Web sitenizin URL'sini girin. AI sayfayı ziyaret edecek, gereksiz kısımları atacak ve işletmeniz için kritik olan bilgileri ayıklayacaktır.
                     </Paragraph>
