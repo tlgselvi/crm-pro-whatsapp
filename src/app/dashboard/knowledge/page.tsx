@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import "@ant-design/v5-patch-for-react-19";
 import {
     Card, Input, Button, Typography, Space, List, Tag, Modal,
     Form, App, Divider, Empty, Tooltip, Tabs, Badge, Select, Drawer
@@ -32,9 +33,11 @@ export default function KnowledgePage() {
     const [searchText, setSearchText] = useState('');
     const [form] = Form.useForm();
     const [scrapeForm] = Form.useForm();
+    const [mounted, setMounted] = useState(false);
     const { message } = App.useApp();
 
     useEffect(() => {
+        setMounted(true);
         fetchEntries();
     }, []);
 
@@ -180,6 +183,8 @@ export default function KnowledgePage() {
         { key: 'guardrail', label: <span><Badge count={entries.filter(e => e.category === 'guardrail').length} offset={[10, 0]} color="red"><SafetyOutlined /> Yasaklar</Badge></span> },
     ];
 
+    if (!mounted) return null;
+
     return (
         <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
@@ -241,7 +246,7 @@ export default function KnowledgePage() {
                     grid={{ gutter: 24, xs: 1, sm: 1, md: 2, lg: 2, xl: 3, xxl: 3 }}
                     dataSource={filteredEntries}
                     renderItem={item => (
-                        <List.Item>
+                        <List.Item key={item.id}>
                             <Card
                                 className="glass-card"
                                 hoverable
@@ -332,8 +337,8 @@ export default function KnowledgePage() {
                 <Paragraph>AI, işletmenizi analiz etti ve aşağıdaki eksik davranış/yasak kurallarını önerdi:</Paragraph>
                 <List
                     dataSource={suggestions}
-                    renderItem={(sug: any) => (
-                        <Card size="small" style={{ marginBottom: 16 }} className="glass-card">
+                    renderItem={(sug: any, index: number) => (
+                        <Card key={`${sug.title}-${index}`} size="small" style={{ marginBottom: 16 }} className="glass-card">
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                 <div style={{ flex: 1 }}>
                                     <Title level={5} style={{ margin: 0 }}>{sug.title}</Title>
