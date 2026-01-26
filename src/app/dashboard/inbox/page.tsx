@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Typography, Input, Tabs, Badge, Avatar, List, Tag, Spin, Divider, Button, Space } from 'antd';
-import { SearchOutlined, UserOutlined, RobotOutlined, ClockCircleOutlined, CheckCircleOutlined, FireOutlined } from '@ant-design/icons';
+import { SearchOutlined, UserOutlined, RobotOutlined, ClockCircleOutlined, CheckCircleOutlined, FireOutlined, BulbOutlined, ReloadOutlined } from '@ant-design/icons';
 import { supabase, ConversationWithContact } from '@/lib/supabase';
+import { summarizeConversation } from '@/lib/services/handover';
 import MessageThread from '@/components/MessageThread';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -133,9 +134,12 @@ export default function InboxPage() {
             </div>
 
             {/* MIDDLE COLUMN: Chat Area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#000' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: '#000', position: 'relative' }}>
                 {selectedConversation ? (
-                    <MessageThread conversation={selectedConversation} />
+                    <>
+                        <AIContextCard conversationId={selectedConversation.id} />
+                        <MessageThread conversation={selectedConversation} />
+                    </>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#333' }}>
                         <RobotOutlined style={{ fontSize: 48, marginBottom: 16, opacity: 0.2 }} />
@@ -245,3 +249,56 @@ const TicketList = ({ contactId }: { contactId: string }) => {
         </Space>
     );
 }
+
+const AIContextCard = ({ conversationId }: { conversationId: string }) => {
+    const [summary, setSummary] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const fetchSummary = async () => {
+        setLoading(true);
+        const result = await summarizeConversation(conversationId);
+        setSummary(result);
+        setLoading(false);
+    };
+
+    useEffect(() => {
+        fetchSummary();
+    }, [conversationId]);
+
+    if (!summary && !loading) return null;
+
+    return (
+        <div style={{
+            padding: '12px 24px',
+            background: 'rgba(56, 139, 255, 0.05)',
+            borderBottom: '1px solid rgba(56, 139, 255, 0.2)',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 12,
+            position: 'absolute',
+            top: 72,
+            left: 0,
+            right: 0,
+            zIndex: 10,
+            backdropFilter: 'blur(10px)'
+        }}>
+            <BulbOutlined style={{ color: 'var(--primary)', marginTop: 4, fontSize: 16 }} />
+            <div style={{ flex: 1 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                    <Text strong style={{ fontSize: 12, color: 'var(--primary)', letterSpacing: 1 }}>AI ÖZETİ</Text>
+                    <Button
+                        size="small"
+                        type="text"
+                        icon={<ReloadOutlined style={{ fontSize: 12 }} />}
+                        onClick={fetchSummary}
+                        loading={loading}
+                        style={{ height: 20, color: '#666' }}
+                    />
+                </div>
+                <Text style={{ fontSize: 13, color: 'var(--text-main)', lineHeight: '1.4' }}>
+                    {loading ? <Spin size="small" /> : summary}
+                </Text>
+            </div>
+        </div>
+    );
+};
