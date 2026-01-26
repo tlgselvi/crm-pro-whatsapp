@@ -3,6 +3,10 @@ import { sendWhatsAppMessage } from '@/lib/whatsapp';
 import { generateAIResponse } from './ai-agent';
 import { createNotification } from './notifications';
 
+export type MessageHandler = (to: string, message: string) => Promise<any>;
+
+const defaultHandler: MessageHandler = (to, msg) => sendWhatsAppMessage(to, msg);
+
 // Types for our graph elements
 interface Node {
     id: string;
@@ -20,7 +24,7 @@ interface Edge {
 /**
  * Main entry point for incoming WhatsApp messages.
  */
-export async function processWorkflowTrigger(message: string, contactId: string, fromPhone: string) {
+export async function processWorkflowTrigger(message: string, contactId: string, fromPhone: string, handler: MessageHandler = defaultHandler) {
     console.log(`[WorkflowEngine] Checking triggers for: "${message}"`);
 
     // 1. Check for Active Session first (resume)
@@ -35,7 +39,7 @@ export async function processWorkflowTrigger(message: string, contactId: string,
 
     if (session && session.current_node_id) {
         console.log(`[WorkflowEngine] Resuming session: ${session.id} at node: ${session.current_node_id}`);
-        await executeWorkflow(session.workflow_id, session.current_node_id, contactId, fromPhone, session.id, message);
+        await executeWorkflow(session.workflow_id, session.current_node_id, contactId, fromPhone, session.id, message, handler);
         return 'resumed';
     }
 
@@ -89,7 +93,7 @@ export async function processWorkflowTrigger(message: string, contactId: string,
                 return null;
             }
 
-            await executeWorkflow(flow.id, nodes.id, contactId, fromPhone, newSession.id);
+            await executeWorkflow(flow.id, nodes.id, contactId, fromPhone, newSession.id, undefined, handler);
             return flow.name;
         }
     }
@@ -98,7 +102,7 @@ export async function processWorkflowTrigger(message: string, contactId: string,
     console.log(`[WorkflowEngine] No keyword match. Triggering Global AI Agent...`);
     const aiResponse = await generateAIResponse(message, contactId);
     if (aiResponse) {
-        await sendWhatsAppMessage(fromPhone, aiResponse);
+        await handler(fromPhone, aiResponse);
 
         // Log to Messages
         const conversationId = await getConversationId(contactId);
@@ -120,7 +124,15 @@ export async function processWorkflowTrigger(message: string, contactId: string,
 /**
  * Executes a workflow starting from a specific node.
  */
-export async function executeWorkflow(workflowId: string, nodeId: string, contactId: string, fromPhone: string, sessionId?: string, userInput?: string) {
+export async function executeWorkflow(
+    workflowId: string,
+    nodeId: string,
+    contactId: string,
+    fromPhone: string,
+    sessionId?: string,
+    userInput?: string,
+    handler: MessageHandler = defaultHandler
+) {
     const { data: nodes } = await supabase.from('workflow_nodes').select('*').eq('workflow_id', workflowId);
     const { data: edges } = await supabase.from('workflow_edges').select('*').eq('workflow_id', workflowId);
 
@@ -143,7 +155,7 @@ export async function executeWorkflow(workflowId: string, nodeId: string, contac
             case 'message':
                 const content = currentNode.content?.content || '';
                 if (content) {
-                    await sendWhatsAppMessage(fromPhone, content);
+                    await handler(fromPhone, content);
                 }
                 break;
 
@@ -176,7 +188,7 @@ export async function executeWorkflow(workflowId: string, nodeId: string, contac
                 } else {
                     // Send the question and pause
                     const question = currentNode.content?.content || '';
-                    if (question) await sendWhatsAppMessage(fromPhone, question);
+                    if (question) await handler(fromPhone, question);
                     isWaitingForInput = true;
                     shouldMoveToNext = false;
                 }
@@ -187,7 +199,7 @@ export async function executeWorkflow(workflowId: string, nodeId: string, contac
                 const query = userInput || currentNode.content?.custom_query || 'Nasıl yardımcı olabilirim?';
                 const aiResponse = await generateAIResponse(query, contactId);
                 if (aiResponse) {
-                    await sendWhatsAppMessage(fromPhone, aiResponse);
+                    await handler(fromPhone, aiResponse);
                 }
                 break;
 
@@ -215,7 +227,7 @@ export async function executeWorkflow(workflowId: string, nodeId: string, contac
                 });
 
                 const handoverMsg = currentNode.content?.content || 'Sizi bir temsilciye aktarıyorum...';
-                await sendWhatsAppMessage(fromPhone, handoverMsg);
+                await handler(fromPhone, handoverMsg);
                 if (sessionId) await supabase.from('workflow_sessions').update({ status: 'completed' }).eq('id', sessionId);
                 return; // Stop flow
         }

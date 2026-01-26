@@ -16,6 +16,7 @@ import {
     TeamOutlined,
     NodeIndexOutlined,
     BellOutlined,
+    RocketOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -60,6 +61,11 @@ const items: MenuItemType[] = [
         key: '/dashboard/broadcast',
         icon: <SoundOutlined />,
         label: 'Duyuru Merkezi',
+    },
+    {
+        key: '/dashboard/simulator',
+        icon: <RocketOutlined />,
+        label: 'Test Asistanı',
     },
     {
         key: '/contacts',
