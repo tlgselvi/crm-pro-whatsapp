@@ -25,7 +25,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     // Vercel AI SDK Integration
     const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages } = useChat({
         api: '/api/chat',
-        onError: (err) => {
+        onError: (err: Error) => {
             console.error('AI SDK Error:', err);
             message.error('AI servisi şu an yanıt veremiyor.');
         },
