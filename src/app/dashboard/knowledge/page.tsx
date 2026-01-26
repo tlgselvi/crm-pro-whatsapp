@@ -1,8 +1,12 @@
 'use client';
+
 import "@ant-design/v5-patch-for-react-19";
 
 import React, { useState, useEffect } from 'react';
-import { Card, Input, Button, Typography, Space, List, Tag, Modal, Form, App, Divider, Empty, Tooltip } from 'antd';
+import {
+    Card, Input, Button, Typography, Space, List, Tag, Modal,
+    Form, App, Divider, Empty, Tooltip, Tabs, Badge, Select, Drawer
+} from 'antd';
 import {
     BookOutlined,
     PlusOutlined,
@@ -14,7 +18,10 @@ import {
     CheckCircleOutlined,
     GlobalOutlined,
     ExperimentOutlined,
-    RobotOutlined
+    RobotOutlined,
+    ShieldOutlined,
+    RocketOutlined,
+    FireOutlined
 } from '@ant-design/icons';
 import {
     addKnowledgeEntry,
@@ -22,7 +29,9 @@ import {
     deleteKnowledgeEntry,
     clearAllCaches,
     scrapeWebsiteAction,
-    refineTrainingPrompt
+    refineTrainingPrompt,
+    suggestRulesAction,
+    KnowledgeCategory
 } from '@/lib/actions-knowledge';
 
 const { Title, Text, Paragraph } = Typography;
@@ -31,9 +40,12 @@ const { TextArea } = Input;
 export default function KnowledgePage() {
     const [entries, setEntries] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<KnowledgeCategory>('informational');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isScrapeModalOpen, setIsScrapeModalOpen] = useState(false);
     const [isRefining, setIsRefining] = useState(false);
+    const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+    const [suggestions, setSuggestions] = useState<any[]>([]);
     const [searchText, setSearchText] = useState('');
     const [form] = Form.useForm();
     const [scrapeForm] = Form.useForm();
@@ -58,7 +70,7 @@ export default function KnowledgePage() {
     async function handleAdd(values: any) {
         setLoading(true);
         try {
-            const res = await addKnowledgeEntry(values.title, values.content);
+            const res = await addKnowledgeEntry(values.title, values.content, 'text', values.category || activeTab);
             if (res.success) {
                 message.success('Bilgi eklendi ve AI eğitildi! 🧠');
                 setIsModalOpen(false);
@@ -76,6 +88,7 @@ export default function KnowledgePage() {
 
     async function handleMagicRefine() {
         const rawContent = form.getFieldValue('content');
+        const category = form.getFieldValue('category') || activeTab;
         if (!rawContent || rawContent.length < 5) {
             message.warning('Refine etmek için lütfen önce biraz içerik yazın.');
             return;
@@ -83,7 +96,7 @@ export default function KnowledgePage() {
 
         setIsRefining(true);
         try {
-            const res = await refineTrainingPrompt(rawContent);
+            const res = await refineTrainingPrompt(rawContent, category);
             if (res.success) {
                 form.setFieldsValue({ content: res.refinedContent });
                 message.success('Metin AI ile mükemmelleştirildi! ✨');
@@ -106,7 +119,8 @@ export default function KnowledgePage() {
                 setIsModalOpen(true);
                 form.setFieldsValue({
                     title: res.title,
-                    content: res.content
+                    content: res.content,
+                    category: 'informational'
                 });
                 message.success('Web sitesi içeriği hazır! Lütfen kontrol edin ve kaydedin. 🕸️');
                 scrapeForm.resetFields();
@@ -115,6 +129,23 @@ export default function KnowledgePage() {
             }
         } catch (error: any) {
             message.error('Sistem Hatası: ' + error.message);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function handleSuggestRules() {
+        setLoading(true);
+        try {
+            const res = await suggestRulesAction();
+            if (res.success) {
+                setSuggestions(res.suggestions);
+                setIsSuggestionsOpen(true);
+            } else {
+                message.error(res.error);
+            }
+        } catch (error) {
+            message.error('Öneri alınamadı');
         } finally {
             setLoading(false);
         }
@@ -147,32 +178,55 @@ export default function KnowledgePage() {
     }
 
     const filteredEntries = entries.filter(e =>
-        e.title.toLowerCase().includes(searchText.toLowerCase()) ||
-        e.content.toLowerCase().includes(searchText.toLowerCase())
+        (activeTab === 'informational' ? (e.category === 'informational' || !e.category) : e.category === activeTab) &&
+        (e.title.toLowerCase().includes(searchText.toLowerCase()) ||
+            e.content.toLowerCase().includes(searchText.toLowerCase()))
     );
+
+    const getCategoryDetails = (cat: KnowledgeCategory) => {
+        switch (cat) {
+            case 'behavioral': return { icon: <RocketOutlined />, color: 'orange', label: 'Davranış Kuralları', desc: 'Botun nasıl konuşacağını ve satış stratejilerini belirleyin.' };
+            case 'guardrail': return { icon: <ShieldOutlined />, color: 'red', label: 'Yasaklar & Sınırlar', desc: 'Botun asla yapmaması gerekenleri tanımlayın.' };
+            default: return { icon: <BookOutlined />, color: 'blue', label: 'Genel Bilgi Bankası', desc: 'Ürün, hizmet ve genel şirket bilgilerini ekleyin.' };
+        }
+    };
+
+    const tabItems = [
+        { key: 'informational', label: <span><BookOutlined /> Bilgi (RAG)</span> },
+        { key: 'behavioral', label: <span><Badge count={entries.filter(e => e.category === 'behavioral').length} offset={[10, 0]} color="orange"><RocketOutlined /> Davranış</Badge></span> },
+        { key: 'guardrail', label: <span><Badge count={entries.filter(e => e.category === 'guardrail').length} offset={[10, 0]} color="red"><ShieldOutlined /> Yasaklar</Badge></span> },
+    ];
 
     return (
         <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
                 <div>
-                    <Title level={2}><BookOutlined /> Bilgi Bankası (Eğitim)</Title>
-                    <Text type="secondary">Botunuza şirketiniz, ürünleriniz ve hizmetleriniz hakkında derinlemesine bilgi verin. AI bu bilgileri kullanarak müşterilere yanıt verecektir.</Text>
+                    <Title level={2}><BookOutlined /> Bilgi Bankası & Davranış Merkezi</Title>
+                    <Text type="secondary">Botunuzu hem bilgilerle donatın hem de nasıl davranacağını kural altına alın.</Text>
                 </div>
                 <Space>
-                    <Tooltip title="Tüm sistem önbelleklerini temizle ve verileri tazele">
-                        <Button icon={<ClearOutlined />} onClick={handleClearCache}>Önbelleği Temizle</Button>
+                    <Tooltip title="AI ile işletmenize özel kurallar üretin">
+                        <Button icon={<FireOutlined />} onClick={handleSuggestRules}>AI Kural Önerileri</Button>
                     </Tooltip>
+                    <Button icon={<ClearOutlined />} onClick={handleClearCache}>Önbelleği Temizle</Button>
                     <Button icon={<GlobalOutlined />} onClick={() => setIsScrapeModalOpen(true)}>Web'den Öğret</Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => {
-                        form.resetFields();
+                        form.setFieldsValue({ category: activeTab });
                         setIsModalOpen(true);
-                    }}>Yeni Bilgi Ekle</Button>
+                    }}>Yeni Ekle</Button>
                 </Space>
             </div>
 
+            <Tabs
+                activeKey={activeTab}
+                onChange={(key) => setActiveTab(key as KnowledgeCategory)}
+                items={tabItems}
+                style={{ marginBottom: 24 }}
+            />
+
             <div style={{ marginBottom: 24 }}>
                 <Input
-                    placeholder="Bilgi ara..."
+                    placeholder="Ara..."
                     prefix={<SearchOutlined />}
                     size="large"
                     value={searchText}
@@ -182,15 +236,22 @@ export default function KnowledgePage() {
                 />
             </div>
 
+            <Card className="glass-card" style={{ marginBottom: 24, background: 'rgba(255, 255, 255, 0.05)' }}>
+                <Space size="middle">
+                    {getCategoryDetails(activeTab).icon}
+                    <div>
+                        <Title level={5} style={{ margin: 0 }}>{getCategoryDetails(activeTab).label}</Title>
+                        <Text type="secondary">{getCategoryDetails(activeTab).desc}</Text>
+                    </div>
+                </Space>
+            </Card>
+
             {loading && entries.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: 100 }}><ThunderboltOutlined spin style={{ fontSize: 40, color: 'var(--primary)' }} /></div>
             ) : filteredEntries.length === 0 ? (
                 <Card className="glass-card" style={{ textAlign: 'center', padding: 60 }}>
-                    <Empty description="Herhangi bir eğitim verisi bulunamadı." />
-                    <Space direction="vertical">
-                        <Button type="primary" style={{ marginTop: 16 }} onClick={() => setIsModalOpen(true)}>İlk Bilgiyi Ekle</Button>
-                        <Button icon={<GlobalOutlined />} onClick={() => setIsScrapeModalOpen(true)}>Web Sitesinden Çek</Button>
-                    </Space>
+                    <Empty description="Bu kategoride henüz bir veri bulunamadı." />
+                    <Button type="primary" style={{ marginTop: 16 }} onClick={() => setIsModalOpen(true)}>İlk Bilgiyi/Kuralı Ekle</Button>
                 </Card>
             ) : (
                 <List
@@ -216,7 +277,9 @@ export default function KnowledgePage() {
                                 </Paragraph>
                                 <Divider style={{ margin: '12px 0' }} />
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <Tag color="blue">{item.type?.toUpperCase() || 'TEXT'}</Tag>
+                                    <Tag color={getCategoryDetails(item.category || 'informational').color}>
+                                        {(item.category || 'informational').toUpperCase()}
+                                    </Tag>
                                     <Text type="secondary" style={{ fontSize: 11 }}>
                                         {new Date(item.created_at).toLocaleDateString()}
                                     </Text>
@@ -227,19 +290,9 @@ export default function KnowledgePage() {
                 />
             )}
 
-            {/* Guide Card */}
-            <Card className="glass-card" style={{ marginTop: 40, border: '1px solid rgba(168, 199, 250, 0.2)' }}>
-                <Title level={4}><BulbOutlined /> Nasıl Eğitmeli?</Title>
-                <Space direction="vertical" style={{ width: '100%' }}>
-                    <Text><CheckCircleOutlined style={{ color: '#52c41a' }} /> **Web'den Öğret**: Şirket sitenizin linkini verin, AI işinize yarayacak bilgileri saniyeler içinde ayıklasın.</Text>
-                    <Text><CheckCircleOutlined style={{ color: '#52c41a' }} /> **AI ile Geliştir**: Kısa notlar yazın ve "Magic Refine" butonuna basın. AI bunu botun en iyi anlayacağı formata sokar.</Text>
-                    <Text><CheckCircleOutlined style={{ color: '#52c41a' }} /> **Prompt Bağlantısı**: Buraya eklediğiniz her şey, botun genel bilgisine ve otomasyonlardaki AI Agent kararlarına doğrudan etki eder.</Text>
-                </Space>
-            </Card>
-
-            {/* New Knowledge Modal */}
+            {/* New Knowledge/Rule Modal */}
             <Modal
-                title={<span><RobotOutlined /> Yeni Bilgi Ekle</span>}
+                title={<span><RobotOutlined /> Yeni Eğitim Kaydı</span>}
                 open={isModalOpen}
                 onCancel={() => setIsModalOpen(false)}
                 footer={null}
@@ -247,14 +300,21 @@ export default function KnowledgePage() {
                 width={700}
             >
                 <Form form={form} layout="vertical" onFinish={handleAdd}>
+                    <Form.Item name="category" label="Eğitim Türü" rules={[{ required: true }]}>
+                        <Select options={[
+                            { label: 'Bilgi (RAG) - Web sitesi bilgileri, ürün detayları vb.', value: 'informational' },
+                            { label: 'Davranış (Behavior) - Konuşma tarzı, satış kuralları vb.', value: 'behavioral' },
+                            { label: 'Yasak (Guardrail) - Konuşulmaması gerekenler vb.', value: 'guardrail' },
+                        ]} />
+                    </Form.Item>
                     <Form.Item name="title" label="Başlık" rules={[{ required: true, message: 'Bir başlık girin' }]}>
-                        <Input placeholder="Örn: Kargo ve Teslimat Politikası" />
+                        <Input placeholder="Örn: İade Politikası veya Selamlama Kuralı" />
                     </Form.Item>
                     <Form.Item
                         name="content"
                         label={
                             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                                <span>İçerik / Bilgi Metni</span>
+                                <span>İçerik / Kural Metni</span>
                                 <Button
                                     type="link"
                                     size="small"
@@ -262,21 +322,60 @@ export default function KnowledgePage() {
                                     onClick={handleMagicRefine}
                                     loading={isRefining}
                                 >
-                                    AI ile Mükemmelleştir
+                                    AI ile Profesyonelleştir
                                 </Button>
                             </div>
                         }
-                        rules={[{ required: true, message: 'Eğitim içeriğini girin' }]}
+                        rules={[{ required: true, message: 'İçeriği girin' }]}
                     >
-                        <TextArea rows={12} placeholder="Müşteriye verilecek bilgileri buraya detaylıca yazın veya AI'ya geliştirmesi için kısa notlar bırakın..." />
+                        <TextArea rows={12} placeholder="AI'ya ne yapması/bilmesi gerektiğini buraya yazın..." />
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block loading={loading} style={{ height: 45 }}>
-                            AI'yı Eğit ve Kaydet
+                            Sistemi Eğit ve Kaydet
                         </Button>
                     </Form.Item>
                 </Form>
             </Modal>
+
+            {/* AI Rule Suggestions Drawer */}
+            <Drawer
+                title={<span><FireOutlined style={{ color: 'orange' }} /> AI Kural Önerileri</span>}
+                placement="right"
+                onClose={() => setIsSuggestionsOpen(false)}
+                open={isSuggestionsOpen}
+                width={500}
+            >
+                <Paragraph>AI, işletmenizi analiz etti ve aşağıdaki eksik davranış/yasak kurallarını önerdi:</Paragraph>
+                <List
+                    dataSource={suggestions}
+                    renderItem={(sug: any) => (
+                        <Card size="small" style={{ marginBottom: 16 }} className="glass-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ flex: 1 }}>
+                                    <Title level={5} style={{ margin: 0 }}>{sug.title}</Title>
+                                    <Tag color={sug.category === 'behavioral' ? 'orange' : 'red'}>{sug.category.toUpperCase()}</Tag>
+                                    <Paragraph style={{ marginTop: 8, fontSize: 13 }}>{sug.content}</Paragraph>
+                                    <Text type="secondary" italic style={{ fontSize: 12 }}>Neden: {sug.reason}</Text>
+                                </div>
+                                <Button
+                                    type="primary"
+                                    size="small"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => {
+                                        setIsModalOpen(true);
+                                        form.setFieldsValue({
+                                            title: sug.title,
+                                            content: sug.content,
+                                            category: sug.category
+                                        });
+                                    }}
+                                >Ekle</Button>
+                            </div>
+                        </Card>
+                    )}
+                />
+            </Drawer>
 
             {/* Scrape Website Modal */}
             <Modal
@@ -287,15 +386,13 @@ export default function KnowledgePage() {
                 destroyOnClose
             >
                 <Form form={scrapeForm} layout="vertical" onFinish={handleScrape}>
-                    <Paragraph>
-                        Web sitenizin URL'sini girin. AI sayfayı ziyaret edecek, gereksiz kısımları atacak ve işletmeniz için kritik olan bilgileri ayıklayacaktır.
-                    </Paragraph>
-                    <Form.Item name="url" label="Web Sitesi URL" rules={[{ required: true, message: 'Bir URL girin' }, { type: 'url', message: 'Geçerli bir URL girin' }]}>
-                        <Input placeholder="https://www.siteniz.com/hakkimizda" prefix={<GlobalOutlined />} />
+                    <Paragraph>Web sitenizin URL'sini girin. AI sayfayı ziyaret edecek ve kritik bilgileri ayıklayacaktır.</Paragraph>
+                    <Form.Item name="url" label="Web Sitesi URL" rules={[{ required: true }, { type: 'url' }]}>
+                        <Input placeholder="https://www.siteniz.com" prefix={<GlobalOutlined />} />
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block loading={loading} style={{ height: 45 }}>
-                            Siteyi Tara ve Analiz Et
+                            Siteyi Analiz Et
                         </Button>
                     </Form.Item>
                 </Form>

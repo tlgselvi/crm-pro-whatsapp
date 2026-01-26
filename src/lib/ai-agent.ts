@@ -14,15 +14,17 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 }
 
 /**
- * Searches the knowledge base for relevant content based on a query.
+ * Searches the knowledge base for relevant content.
+ * Category 'informational' is prioritized for RAG.
  */
 export async function searchKnowledgeBase(query: string, limit = 5) {
     const embedding = await generateEmbedding(query);
 
-    const { data, error } = await supabase.rpc('match_knowledge_base', {
+    const { data, error } = await supabase.rpc('match_knowledge_base_v2', {
         query_embedding: embedding,
         match_threshold: 0.5,
         match_count: limit,
+        category_filter: 'informational'
     });
 
     if (error) {
@@ -34,26 +36,69 @@ export async function searchKnowledgeBase(query: string, limit = 5) {
 }
 
 /**
- * Generates an AI response using RAG.
+ * Fetches strict Behavioral and Guardrail rules.
+ */
+async function getActiveRules() {
+    const { data, error } = await supabase
+        .from('knowledge_base')
+        .select('content, category, priority')
+        .in('category', ['behavioral', 'guardrail'])
+        .order('priority', { ascending: false });
+
+    if (error) return { behavioral: [], guardrail: [] };
+
+    return {
+        behavioral: data.filter(r => r.category === 'behavioral').map(r => r.content),
+        guardrail: data.filter(r => r.category === 'guardrail').map(r => r.content)
+    };
+}
+
+/**
+ * Generates an AI response using Hierarchical Context Injection.
  */
 export async function generateAIResponse(userMessage: string, contactId: string) {
-    // 1. Fetch AI Settings
-    const { data: settings } = await supabase
-        .from('ai_settings')
-        .select('*')
-        .single();
+    // 1. Fetch AI Settings & Global Rules
+    const [settingsRes, rules] = await Promise.all([
+        supabase.from('ai_settings').select('*').single(),
+        getActiveRules()
+    ]);
 
+    const settings = settingsRes.data;
     const companyContext = settings ? `Şirket: ${settings.company_name}. ` : '';
-    const systemPrompt = settings?.system_instructions || 'Sen bir yardımcısın.';
+    const basePrompt = settings?.system_instructions || 'Sen profesyonel bir asistansın.';
 
-    // 2. Retrieve relevant docs
+    // 2. Retrieve relevant informational docs (RAG)
     const relevantDocs = await searchKnowledgeBase(userMessage);
-    const context = relevantDocs.map((doc: any) => doc.content).join('\n---\n');
+    const knowledgeContext = relevantDocs.map((doc: any) => doc.content).join('\n---\n');
 
-    // 3. Generate Answer
+    // 3. Construct Hierarchical System Prompt
+    const guardrailSystem = rules.guardrail.length > 0
+        ? `\n\n### KESİN YASAKLAR VE SINIRLAR (GUARDRAILS):\n- ${rules.guardrail.join('\n- ')}`
+        : '';
+
+    const behavioralSystem = rules.behavioral.length > 0
+        ? `\n\n### DAVRANIŞ VE ETKİLEŞİM KURALLARI:\n- ${rules.behavioral.join('\n- ')}`
+        : '';
+
+    const fullSystemPrompt = `
+${basePrompt}
+${companyContext}
+
+${behavioralSystem}
+${guardrailSystem}
+
+### ÖNEMLİ TALİMAT:
+Yukarıdaki "DAVRANIŞ" ve "YASAKLAR" kuralları, aşağıdaki "BİLGİ BANKASI" verilerinden daha önceliklidir. 
+Eğer bir kural, bilgi bankasındaki bir veriyle çelişirse, her zaman KURALI uygula.
+
+### BİLGİ BANKASI BAĞLAMI:
+${knowledgeContext || 'Şu an bu konuda özel bir bilgi yok, genel şirket bilgilerinle yanıt ver.'}
+`.trim();
+
+    // 4. Generate Answer
     const { text } = await generateText({
         model: google('gemini-2.5-flash'),
-        system: `${systemPrompt}\n\n${companyContext}\n\nBilgi Bankası Bağlamı:\n${context}`,
+        system: fullSystemPrompt,
         prompt: userMessage,
     });
 
