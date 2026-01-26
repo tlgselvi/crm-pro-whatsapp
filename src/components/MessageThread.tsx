@@ -10,6 +10,7 @@ import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import { useChat } from 'ai/react';
 
 interface MessageThreadProps {
     conversation: ConversationWithContact | null;
@@ -20,7 +21,23 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [loading, setLoading] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [sending, setSending] = useState(false);
-    const [aiLoading, setAiLoading] = useState(false);
+
+    // Vercel AI SDK Integration
+    const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages } = useChat({
+        api: '/api/chat',
+        onError: (err) => {
+            console.error('AI SDK Error:', err);
+            message.error('AI servisi şu an yanıt veremiyor.');
+        },
+    });
+
+    // Stream content to input
+    useEffect(() => {
+        const lastMsg = aiMessages[aiMessages.length - 1];
+        if (lastMsg && lastMsg.role === 'assistant') {
+            setInputValue(lastMsg.content);
+        }
+    }, [aiMessages]);
     const [tasks, setTasks] = useState<any[]>([]);
     const [tasksLoading, setTasksLoading] = useState(false);
     const [newTaskNote, setNewTaskNote] = useState('');
@@ -224,30 +241,22 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
             return;
         }
 
-        setAiLoading(true);
         try {
-            const response = await fetch('/api/ai-suggest', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lastMessage: lastCustomerMessage.content,
-                    customerName: conversation?.contact?.name,
-                }),
+            // Reset previous AI state to ensure fresh context
+            setAiMessages([]);
+
+            // Trigger AI with context
+            await append({
+                role: 'user',
+                content: `Son Müşteri Mesajı (${conversation.contact?.name || 'Müşteri'}): "${lastCustomerMessage.content}". 
+                
+                Lütfen bu mesaja uygun, profesyonel ve satış odaklı kısa bir cevap önerisi yaz. Cevap sadece önerilen metni içermeli.`
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.details || errorData.error || 'AI suggestion failed');
-            }
-
-            const data = await response.json();
-            setInputValue(data.suggestion);
-            message.success('AI önerisi hazır! İstersen düzenle ve gönder.');
+            message.success('AI önerisi hazırlanıyor...');
         } catch (error: any) {
             console.error('AI suggestion error:', error);
-            message.error(`AI önerisi alınamadı: ${error.message}`);
-        } finally {
-            setAiLoading(false);
+            message.error('AI başlatılamadı.');
         }
     }
 
@@ -341,7 +350,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                         <Button
                             icon={<BulbOutlined />}
                             onClick={handleAiSuggest}
-                            loading={aiLoading}
+                            loading={isAiThinking}
                             size="small"
                         >
                             AI Öneri
