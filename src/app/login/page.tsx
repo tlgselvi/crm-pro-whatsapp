@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { UserOutlined, LockOutlined, LoginOutlined, GoogleOutlined } from '@ant-design/icons';
+import { UserOutlined, LockOutlined, LoginOutlined } from '@ant-design/icons';
 import { Form, Input, Button, Card, Typography, message, App, Divider } from 'antd';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
@@ -13,19 +13,7 @@ export default function LoginPage() {
     const router = useRouter();
     const { message } = App.useApp();
 
-    const handleGoogleLogin = async () => {
-        try {
-            const { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
-                },
-            });
-            if (error) throw error;
-        } catch (error: any) {
-            message.error(error.message || 'Google ile giriş başarısız.');
-        }
-    };
+
 
     const onFinish = async (values: any) => {
         setLoading(true);
@@ -75,27 +63,64 @@ export default function LoginPage() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: '#f0f2f5',
-            backgroundImage: 'radial-gradient(circle at 20% 30%, #e6f7ff 0%, #f0f2f5 100%)'
+            background: '#09090b',
+            position: 'relative',
+            overflow: 'hidden'
         }}>
-            <Card style={{ width: 400, boxShadow: '0 4px 12px rgba(0,0,0,0.08)', borderRadius: 12 }}>
-                <div style={{ textAlign: 'center', marginBottom: 32 }}>
+            {/* Ambient Lighting Effects */}
+            <div style={{
+                position: 'absolute',
+                top: '-20%',
+                left: '-10%',
+                width: '60%',
+                height: '60%',
+                background: 'radial-gradient(circle, rgba(29, 78, 216, 0.15), transparent 70%)',
+                filter: 'blur(80px)',
+                zIndex: 0
+            }} />
+            <div style={{
+                position: 'absolute',
+                bottom: '-20%',
+                right: '-10%',
+                width: '60%',
+                height: '60%',
+                background: 'radial-gradient(circle, rgba(147, 51, 234, 0.15), transparent 70%)',
+                filter: 'blur(80px)',
+                zIndex: 0
+            }} />
+
+            <Card style={{
+                width: 420,
+                backdropFilter: 'blur(24px)',
+                background: 'rgba(255, 255, 255, 0.03)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+                borderRadius: 24,
+                zIndex: 1,
+                padding: 12
+            }} bordered={false}>
+                <div style={{ textAlign: 'center', marginBottom: 40, paddingTop: 12 }}>
                     <div style={{
-                        width: 64,
-                        height: 64,
-                        background: '#1890ff',
-                        borderRadius: 16,
+                        width: 72,
+                        height: 72,
+                        background: 'linear-gradient(135deg, #1d4ed8 0%, #7e22ce 100%)',
+                        borderRadius: 20,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        margin: '0 auto 16px',
+                        margin: '0 auto 24px',
                         color: 'white',
-                        fontSize: 32
+                        fontSize: 32,
+                        boxShadow: '0 10px 25px -5px rgba(126, 34, 206, 0.3)'
                     }}>
                         <LoginOutlined />
                     </div>
-                    <Title level={2} style={{ margin: 0 }}>CRM Pro</Title>
-                    <Text type="secondary">SaaS Paneline Giriş Yapın</Text>
+                    <Title level={2} style={{ margin: '0 0 8px 0', color: 'white', fontWeight: 600, letterSpacing: '-0.5px' }}>
+                        Hoş Geldiniz
+                    </Title>
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.45)', fontSize: 15 }}>
+                        CRM Pro panelinize giriş yapın
+                    </Text>
                 </div>
 
                 <Form
@@ -103,52 +128,84 @@ export default function LoginPage() {
                     onFinish={onFinish}
                     layout="vertical"
                     size="large"
+                    requiredMark={false}
                 >
                     <Form.Item
                         name="email"
-                        rules={[{ required: true, message: 'Lütfen e-posta adresinizi girin!' }, { type: 'email', message: 'Geçerli bir e-posta girin!' }]}
+                        rules={[{ required: true, message: 'E-posta adresi gerekli' }]}
                     >
-                        <Input prefix={<UserOutlined />} placeholder="E-posta" />
+                        <Input
+                            prefix={<UserOutlined style={{ color: 'rgba(255, 255, 255, 0.25)' }} />}
+                            placeholder="E-posta"
+                            style={{
+                                background: 'rgba(0, 0, 0, 0.2)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                color: 'white',
+                                height: 50,
+                                borderRadius: 12
+                            }}
+                            className="glass-input"
+                        />
                     </Form.Item>
 
                     <Form.Item
                         name="password"
-                        rules={[{ required: true, message: 'Lütfen şifrenizi girin!' }]}
+                        rules={[{ required: true, message: 'Şifre gerekli' }]}
                     >
-                        <Input.Password prefix={<LockOutlined />} placeholder="Şifre" />
+                        <Input.Password
+                            prefix={<LockOutlined style={{ color: 'rgba(255, 255, 255, 0.25)' }} />}
+                            placeholder="Şifre"
+                            style={{
+                                background: 'rgba(0, 0, 0, 0.2)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                color: 'white',
+                                height: 50,
+                                borderRadius: 12
+                            }}
+                            className="glass-input"
+                        />
                     </Form.Item>
 
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" loading={loading} block style={{ height: 45, borderRadius: 8 }}>
+                    <Form.Item style={{ marginBottom: 20 }}>
+                        <Button
+                            type="primary"
+                            htmlType="submit"
+                            loading={loading}
+                            block
+                            style={{
+                                height: 50,
+                                borderRadius: 12,
+                                background: 'white',
+                                color: 'black',
+                                border: 'none',
+                                fontWeight: 600,
+                                fontSize: 16
+                            }}
+                        >
                             Giriş Yap
                         </Button>
                     </Form.Item>
                 </Form>
 
-                <div style={{ margin: '16px 0' }}>
-                    <Divider plain>veya</Divider>
-                    <Button
-                        block
-                        icon={<GoogleOutlined />}
-                        onClick={handleGoogleLogin}
-                        style={{
-                            height: 45,
-                            borderRadius: 8,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
-                        Google ile Giriş Yap
-                    </Button>
-                </div>
-
                 <div style={{ textAlign: 'center' }}>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                        Henüz bir hesabınız yok mu? Lütfen yönetici ile iletişime geçin.
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 13 }}>
+                        Hesabınız yok mu? <span style={{ color: 'white', cursor: 'pointer', textDecoration: 'underline' }}>Yönetici ile görüşün</span>
                     </Text>
                 </div>
             </Card>
+
+            <style jsx global>{`
+                .glass-input::placeholder {
+                    color: rgba(255, 255, 255, 0.35) !important;
+                }
+                .glass-input input {
+                    background: transparent !important;
+                    color: white !important;
+                }
+                .ant-input-password-icon {
+                    color: rgba(255, 255, 255, 0.35) !important;
+                }
+            `}</style>
         </div>
     );
 }

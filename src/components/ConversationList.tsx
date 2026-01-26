@@ -119,7 +119,7 @@ export default function ConversationList({
                     onClick={() => onSelectConversation(item)}
                     style={{
                         cursor: 'pointer',
-                        background: item.id === selectedId ? '#004a77' : 'transparent',
+                        background: item.id === selectedId ? 'rgba(168, 199, 250, 0.1)' : 'transparent',
                         borderLeft: item.id === selectedId ? '3px solid var(--primary-pastel)' : '3px solid transparent',
                         padding: '12px 16px',
                         transition: 'all 0.2s ease'
@@ -133,7 +133,7 @@ export default function ConversationList({
                                     icon={item.last_message?.platform === 'whatsapp' ? <WhatsAppOutlined /> : <UserOutlined />}
                                     style={{
                                         background: item.last_message?.platform === 'whatsapp' ? '#25D366' : 'var(--primary-pastel)',
-                                        color: item.last_message?.platform === 'whatsapp' ? '#fff' : '#000'
+                                        color: item.last_message?.platform === 'whatsapp' ? '#fff' : 'rgba(0,0,0,0.8)'
                                     }}
                                 />
                             </Badge>

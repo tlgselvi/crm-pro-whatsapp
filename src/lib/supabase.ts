@@ -21,6 +21,9 @@ export interface Contact {
   assigned_to?: string;
   created_at: string;
   updated_at: string;
+  lead_score?: number;
+  last_engagement_score?: number;
+  lifecycle_stage?: 'lead' | 'qualified' | 'customer' | 'champion';
 }
 
 export interface Conversation {
@@ -30,6 +33,8 @@ export interface Conversation {
   last_message_at: string;
   created_at: string;
   unread_count: number;
+  status_type?: 'bot_active' | 'queued' | 'agent_active';
+  assigned_agent_id?: string;
 }
 
 export interface Message {

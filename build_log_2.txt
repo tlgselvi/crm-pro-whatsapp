@@ -1,0 +1,50 @@
+
+> bow@0.1.0 build
+> next build
+
+▲ Next.js 16.1.4 (Turbopack)
+- Environments: .env.local
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.3s
+  Running TypeScript ...
+  Collecting page data using 31 workers ...
+  Generating static pages using 31 workers (0/24) ...
+  Generating static pages using 31 workers (6/24) 
+  Generating static pages using 31 workers (12/24) 
+  Generating static pages using 31 workers (18/24) 
+✓ Generating static pages using 31 workers (24/24) in 1281.9ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/ai-suggest
+├ ƒ /api/chat
+├ ƒ /api/generate-persona
+├ ƒ /api/process-campaign
+├ ƒ /api/submit-lead
+├ ƒ /api/whatsapp-template
+├ ƒ /api/whatsapp-templates
+├ ƒ /api/whatsapp-webhook
+├ ƒ /auth/callback
+├ ○ /contacts
+├ ○ /dashboard
+├ ○ /inbox
+├ ○ /login
+├ ○ /marketing
+├ ○ /pipeline
+├ ƒ /public-form/[id]
+├ ○ /salesbot
+├ ○ /settings
+├ ○ /settings/ai
+├ ○ /settings/forms
+└ ○ /settings/team
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

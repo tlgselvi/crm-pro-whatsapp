@@ -10,7 +10,7 @@ import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
-import { useChat } from '@ai-sdk/react';
+
 
 interface MessageThreadProps {
     conversation: ConversationWithContact | null;
@@ -22,24 +22,8 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [inputValue, setInputValue] = useState('');
     const [sending, setSending] = useState(false);
 
-    // Vercel AI SDK Integration
-    const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages, error: aiError } = useChat() as any;
-
-    // Handle AI Errors
-    useEffect(() => {
-        if (aiError) {
-            console.error('AI SDK Error:', aiError);
-            message.error('AI servisi şu an yanıt veremiyor.');
-        }
-    }, [aiError]);
-
-    // Stream content to input
-    useEffect(() => {
-        const lastMsg = aiMessages[aiMessages.length - 1];
-        if (lastMsg && lastMsg.role === 'assistant') {
-            setInputValue(lastMsg.content);
-        }
-    }, [aiMessages]);
+    // AI State
+    const [isAiThinking, setIsAiThinking] = useState(false);
     const [tasks, setTasks] = useState<any[]>([]);
     const [tasksLoading, setTasksLoading] = useState(false);
     const [newTaskNote, setNewTaskNote] = useState('');
@@ -244,21 +228,43 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
         }
 
         try {
-            // Reset previous AI state to ensure fresh context
-            setAiMessages([]);
+            setIsAiThinking(true);
+            setInputValue(''); // Clear input
 
-            // Trigger AI with context
-            await append({
-                role: 'user',
-                content: `Son Müşteri Mesajı (${conversation.contact?.name || 'Müşteri'}): "${lastCustomerMessage.content}". 
-                
-                Lütfen bu mesaja uygun, profesyonel ve satış odaklı kısa bir cevap önerisi yaz. Cevap sadece önerilen metni içermeli.`
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            role: 'user',
+                            content: `Son Müşteri Mesajı (${conversation.contact?.name || 'Müşteri'}): "${lastCustomerMessage.content}". 
+            
+            Lütfen bu mesaja uygun, profesyonel ve satış odaklı kısa bir cevap önerisi yaz. Cevap sadece önerilen metni içermeli.`
+                        }
+                    ]
+                })
             });
 
-            message.success('AI önerisi hazırlanıyor...');
+            if (!response.ok || !response.body) {
+                throw new Error(response.statusText);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                setInputValue((prev) => prev + chunk);
+            }
+
         } catch (error: any) {
-            console.error('AI suggestion error:', error);
-            message.error('AI başlatılamadı.');
+            console.error('AI Suggest Error:', error);
+            message.error('AI önerisi alınamadı.');
+        } finally {
+            setIsAiThinking(false);
         }
     }
 
@@ -293,7 +299,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                         background: 'var(--container-bg)'
                     }}
                 >
-                    <Avatar icon={<UserOutlined />} size={40} style={{ background: '#28292a' }} />
+                    <Avatar icon={<UserOutlined />} size={40} style={{ background: 'var(--input-bg)' }} />
                     <div>
                         <div style={{ fontWeight: 600, fontSize: 16, color: 'var(--text-main)' }}>{conversation?.contact?.name}</div>
                         <div style={{ color: 'var(--text-secondary)', fontSize: 12 }}>{conversation?.contact?.phone}</div>
@@ -401,7 +407,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
                         label: 'Profil',
                         children: (
                             <div style={{ padding: 20, textAlign: 'center' }}>
-                                <Avatar size={64} icon={<UserOutlined />} style={{ marginBottom: 16, background: '#28292a' }} />
+                                <Avatar size={64} icon={<UserOutlined />} style={{ marginBottom: 16, background: 'var(--input-bg)' }} />
                                 <div style={{ fontSize: 18, fontWeight: 600, color: 'var(--text-main)' }}>{conversation?.contact?.name}</div>
                                 <div style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>{conversation?.contact?.phone}</div>
                                 <Badge status="processing" text={<span style={{ color: 'var(--text-secondary)' }}>Aktif Müşteri</span>} />

@@ -3,13 +3,24 @@
 
 
 :root {
-  --background: #131314;
-  --container-bg: #1e1f20;
-  --border-color: #444746;
-  --text-main: #e3e3e3;
-  --text-secondary: #c4c7c5;
+  --background: #09090b;
+  /* Zinc 950 - Deeper black for contrast */
+  --container-bg: rgba(24, 24, 27, 0.6);
+  /* Zinc 900 with opacity */
+  --border-color: rgba(255, 255, 255, 0.08);
+  /* White with 8% opacity */
+  --text-main: #e4e4e7;
+  /* Zinc 200 */
+  --text-secondary: #a1a1aa;
+  /* Zinc 400 */
   --primary-pastel: #a8c7fa;
-  --input-bg: #28292a;
+  --input-bg: rgba(39, 39, 42, 0.4);
+  /* Zinc 800 with opacity */
+
+  /* Glassmorphism Tokens */
+  --glass-blur: 20px;
+  --glass-border: 1px solid var(--border-color);
+  --glass-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
 }
 
 @theme inline {
@@ -74,15 +85,20 @@ body {
 }
 
 /* Clear Legacy Utility Classes */
+/* Clear Legacy Utility Classes */
 .glass-card {
   background: var(--container-bg);
-  border: 1px solid var(--border-color);
-  box-shadow: none !important;
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 .premium-gradient {
-  background: var(--input-bg);
-  border: 1px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: var(--glass-border);
 }
 
 /* Ant Design List & Item Overrides */
