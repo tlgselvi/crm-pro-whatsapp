@@ -103,6 +103,7 @@ export async function processWorkflowTrigger(message: string, contactId: string,
     const aiResponse = await generateAIResponse(message, contactId);
     if (aiResponse) {
         await handler(fromPhone, aiResponse);
+        await updateLeadScore(contactId, 5); // +5 for AI Engagement
 
         // Log to Messages
         const conversationId = await getConversationId(contactId);
@@ -269,21 +270,30 @@ async function getConversationId(contactId: string) {
 async function updateLeadScore(contactId: string, scoreChange: number) {
     const { data: contact } = await supabase
         .from('contacts')
-        .select('lead_score')
+        .select('lead_score, stage')
         .eq('id', contactId)
         .single();
 
     if (!contact) return;
 
     const newScore = (contact.lead_score || 0) + scoreChange;
-    let newStage = 'lead';
-    if (newScore > 30) newStage = 'qualified';
+    let newLifecycleStage = 'lead';
+    let newPipelineStage = contact.stage || 'new';
+
+    // 🏆 LEAD SCORING -> PIPELINE MAPPING
+    if (newScore > 30) {
+        newLifecycleStage = 'qualified';
+        if (newPipelineStage === 'new') newPipelineStage = 'qualified';
+    }
+
     if (newScore > 80) {
-        newStage = 'champion';
+        newLifecycleStage = 'champion';
+        if (newPipelineStage === 'qualified') newPipelineStage = 'proposal';
+
         // 🔔 TRIGGER NOTIFICATION FOR CHAMPION
         await createNotification({
             title: '🏆 Yeni Potansiyel Müşteri (Champion)',
-            message: `Bir müşterinin puanı ${newScore} değerine ulaştı!`,
+            message: `Bir müşterinin puanı ${newScore} değerine ulaştı ve Teklif aşamasına taşındı!`,
             type: 'lead',
             link: `/contacts`
         });
@@ -291,7 +301,8 @@ async function updateLeadScore(contactId: string, scoreChange: number) {
 
     await supabase.from('contacts').update({
         lead_score: newScore,
-        lifecycle_stage: newStage,
+        lifecycle_stage: newLifecycleStage,
+        stage: newPipelineStage,
         last_engagement_score: scoreChange
     }).eq('id', contactId);
 }

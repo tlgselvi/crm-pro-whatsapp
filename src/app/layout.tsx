@@ -51,6 +51,9 @@ export default function RootLayout({
         />
       </head>
       <body suppressHydrationWarning>
+        <div className="aurora-container">
+          <div className="aurora" />
+        </div>
         <ConfigProvider theme={themeConfig}>
           <App>
             <MainLayout>{children}</MainLayout>
