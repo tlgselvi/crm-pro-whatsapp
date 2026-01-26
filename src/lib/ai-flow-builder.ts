@@ -1,4 +1,4 @@
-import { google } from '@ai-sdk/google';
+import { google } from './ai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 
