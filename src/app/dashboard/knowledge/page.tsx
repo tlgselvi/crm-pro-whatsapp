@@ -58,13 +58,17 @@ export default function KnowledgePage() {
     async function handleAdd(values: any) {
         setLoading(true);
         try {
-            await addKnowledgeEntry(values.title, values.content);
-            message.success('Bilgi eklendi ve AI eğitildi! 🧠');
-            setIsModalOpen(false);
-            form.resetFields();
-            await fetchEntries();
+            const res = await addKnowledgeEntry(values.title, values.content);
+            if (res.success) {
+                message.success('Bilgi eklendi ve AI eğitildi! 🧠');
+                setIsModalOpen(false);
+                form.resetFields();
+                await fetchEntries();
+            } else {
+                message.error(res.error || 'Kaydedilemedi');
+            }
         } catch (error: any) {
-            message.error('Hata: ' + error.message);
+            message.error('Sistem Hatası: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -83,9 +87,11 @@ export default function KnowledgePage() {
             if (res.success) {
                 form.setFieldsValue({ content: res.refinedContent });
                 message.success('Metin AI ile mükemmelleştirildi! ✨');
+            } else {
+                message.error(res.error || 'Geliştirme başarısız');
             }
         } catch (error: any) {
-            message.error('Geliştirme başarısız: ' + error.message);
+            message.error('Sistem Hatası: ' + error.message);
         } finally {
             setIsRefining(false);
         }
@@ -104,9 +110,11 @@ export default function KnowledgePage() {
                 });
                 message.success('Web sitesi içeriği hazır! Lütfen kontrol edin ve kaydedin. 🕸️');
                 scrapeForm.resetFields();
+            } else {
+                message.error(res.error || 'Web sitesi okunamadı');
             }
         } catch (error: any) {
-            message.error(error.message);
+            message.error('Sistem Hatası: ' + error.message);
         } finally {
             setLoading(false);
         }
@@ -115,11 +123,15 @@ export default function KnowledgePage() {
     async function handleDelete(id: string) {
         setLoading(true);
         try {
-            await deleteKnowledgeEntry(id);
-            message.success('Bilgi silindi');
-            await fetchEntries();
-        } catch (error) {
-            message.error('Silinemedi');
+            const res = await deleteKnowledgeEntry(id);
+            if (res.success) {
+                message.success('Bilgi silindi');
+                await fetchEntries();
+            } else {
+                message.error(res.error || 'Silinemedi');
+            }
+        } catch (error: any) {
+            message.error('Sistem Hatası: ' + error.message);
         } finally {
             setLoading(false);
         }
