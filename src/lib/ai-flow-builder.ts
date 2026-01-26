@@ -1,6 +1,7 @@
 import { google } from './ai';
 import { generateObject } from 'ai';
 import { z } from 'zod';
+import { supabase } from './supabase';
 
 // Define the schema for our workflow nodes and edges to ensure compatibility with @xyflow/react
 const WorkflowSchema = z.object({
@@ -25,13 +26,19 @@ const WorkflowSchema = z.object({
 });
 
 export async function generateFlowFromDescription(description: string) {
+    // 1. Fetch AI Settings for Context Injection (Rule 2.2)
+    const { data: settings } = await supabase.from('ai_settings').select('company_name, system_instructions').single();
+    const companyContext = settings ? `Company Context: ${settings.company_name}. ` : '';
+
     const { object } = await generateObject({
-        model: google('gemini-1.5-flash'), // Optimized for free tier reliability
+        model: google('gemini-2.5-flash'), // Strictly following Rule 2.1
         schema: WorkflowSchema,
         system: `You are an expert WhatsApp Automation Architect. 
+    ${companyContext}
     Your task is to create a valid JSON workflow based on a user's verbal description. 
     
     Node Types Available:
+    - trigger: Entry point for the flow.
     - message: Sends a text. Use 'content'.
     - question: Asks something and waits. Use 'content' and 'variableName'.
     - delay: Pauses. Use 'delayDuration' and 'delayUnit'.
