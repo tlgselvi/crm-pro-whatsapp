@@ -1,37 +1,21 @@
 'use client';
 
 import "@ant-design/v5-patch-for-react-19";
-
 import React, { useState, useEffect } from 'react';
 import {
     Card, Input, Button, Typography, Space, List, Tag, Modal,
     Form, App, Divider, Empty, Tooltip, Tabs, Badge, Select, Drawer
 } from 'antd';
 import {
-    BookOutlined,
-    PlusOutlined,
-    DeleteOutlined,
-    SearchOutlined,
-    ClearOutlined,
-    ThunderboltOutlined,
-    BulbOutlined,
-    CheckCircleOutlined,
-    GlobalOutlined,
-    ExperimentOutlined,
-    RobotOutlined,
-    ShieldOutlined,
-    RocketOutlined,
-    FireOutlined
+    BookOutlined, PlusOutlined, DeleteOutlined, SearchOutlined,
+    ClearOutlined, ThunderboltOutlined, BulbOutlined, CheckCircleOutlined,
+    GlobalOutlined, ExperimentOutlined, RobotOutlined, SafetyOutlined,
+    RocketOutlined, FireOutlined
 } from '@ant-design/icons';
 import {
-    addKnowledgeEntry,
-    getKnowledgeEntries,
-    deleteKnowledgeEntry,
-    clearAllCaches,
-    scrapeWebsiteAction,
-    refineTrainingPrompt,
-    suggestRulesAction,
-    KnowledgeCategory
+    addKnowledgeEntry, getKnowledgeEntries, deleteKnowledgeEntry,
+    clearAllCaches, scrapeWebsiteAction, refineTrainingPrompt,
+    suggestRulesAction, type KnowledgeCategory
 } from '@/lib/actions-knowledge';
 
 const { Title, Text, Paragraph } = Typography;
@@ -186,7 +170,7 @@ export default function KnowledgePage() {
     const getCategoryDetails = (cat: KnowledgeCategory) => {
         switch (cat) {
             case 'behavioral': return { icon: <RocketOutlined />, color: 'orange', label: 'Davranış Kuralları', desc: 'Botun nasıl konuşacağını ve satış stratejilerini belirleyin.' };
-            case 'guardrail': return { icon: <ShieldOutlined />, color: 'red', label: 'Yasaklar & Sınırlar', desc: 'Botun asla yapmaması gerekenleri tanımlayın.' };
+            case 'guardrail': return { icon: <SafetyOutlined />, color: 'red', label: 'Yasaklar & Sınırlar', desc: 'Botun asla yapmaması gerekenleri tanımlayın.' };
             default: return { icon: <BookOutlined />, color: 'blue', label: 'Genel Bilgi Bankası', desc: 'Ürün, hizmet ve genel şirket bilgilerini ekleyin.' };
         }
     };
@@ -194,7 +178,7 @@ export default function KnowledgePage() {
     const tabItems = [
         { key: 'informational', label: <span><BookOutlined /> Bilgi (RAG)</span> },
         { key: 'behavioral', label: <span><Badge count={entries.filter(e => e.category === 'behavioral').length} offset={[10, 0]} color="orange"><RocketOutlined /> Davranış</Badge></span> },
-        { key: 'guardrail', label: <span><Badge count={entries.filter(e => e.category === 'guardrail').length} offset={[10, 0]} color="red"><ShieldOutlined /> Yasaklar</Badge></span> },
+        { key: 'guardrail', label: <span><Badge count={entries.filter(e => e.category === 'guardrail').length} offset={[10, 0]} color="red"><SafetyOutlined /> Yasaklar</Badge></span> },
     ];
 
     return (
