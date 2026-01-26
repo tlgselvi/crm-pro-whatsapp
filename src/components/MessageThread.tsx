@@ -23,7 +23,7 @@ export default function MessageThread({ conversation }: MessageThreadProps) {
     const [sending, setSending] = useState(false);
 
     // Vercel AI SDK Integration
-    const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages, error: aiError } = useChat();
+    const { append, isLoading: isAiThinking, messages: aiMessages, setMessages: setAiMessages, error: aiError } = useChat() as any;
 
     // Handle AI Errors
     useEffect(() => {
