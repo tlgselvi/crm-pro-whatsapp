@@ -20,6 +20,7 @@ import {
     BookOutlined,
     MenuOutlined,
     MenuFoldOutlined,
+    RiseOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -79,6 +80,11 @@ const items: MenuItemType[] = [
         key: '/dashboard/knowledge',
         icon: <BookOutlined />,
         label: 'Eğitim (AI)',
+    },
+    {
+        key: '/dashboard/sales',
+        icon: <RiseOutlined />,
+        label: 'Satışlar',
     },
     {
         key: '/settings',
