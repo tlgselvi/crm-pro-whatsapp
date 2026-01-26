@@ -86,21 +86,29 @@ export default function ContactsPage() {
     ];
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ padding: '0 0 24px 0' }}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 24,
+                flexWrap: 'wrap',
+                gap: 16
+            }}>
                 <Title level={2} style={{ margin: 0 }}>Rehber</Title>
-                <Button type="primary" icon={<UserOutlined />}>
+                <Button type="primary" icon={<UserOutlined />} block={window?.innerWidth < 576}>
                     Kişi Ekle
                 </Button>
             </div>
 
-            <Card variant="borderless">
+            <Card variant="borderless" styles={{ body: { padding: window?.innerWidth < 576 ? 0 : 24 } }} className="glass-card">
                 <Table
                     dataSource={contacts}
                     columns={columns}
                     rowKey="id"
                     loading={loading}
                     pagination={{ pageSize: 10 }}
+                    scroll={{ x: 'max-content' }}
                 />
             </Card>
         </div>

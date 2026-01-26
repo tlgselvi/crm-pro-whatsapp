@@ -186,17 +186,24 @@ export default function KnowledgePage() {
     if (!mounted) return null;
 
     return (
-        <div style={{ padding: 24, maxWidth: 1200, margin: '0 auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 32 }}>
-                <div>
-                    <Title level={2}><BookOutlined /> Bilgi Bankası & Davranış Merkezi</Title>
+        <div style={{ padding: '0 0 24px 0', maxWidth: 1200, margin: '0 auto' }}>
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: 32,
+                flexWrap: 'wrap',
+                gap: 16
+            }}>
+                <div style={{ flex: '1 1 300px' }}>
+                    <Title level={2} style={{ margin: 0 }}><BookOutlined /> Bilgi Bankası & Davranış Merkezi</Title>
                     <Text type="secondary">Botunuzu hem bilgilerle donatın hem de nasıl davranacağını kural altına alın.</Text>
                 </div>
-                <Space>
+                <Space wrap size={[8, 16]} style={{ flex: '1 1 auto', justifyContent: 'flex-end' }}>
                     <Tooltip title="AI ile işletmenize özel kurallar üretin">
                         <Button icon={<FireOutlined />} onClick={handleSuggestRules}>AI Kural Önerileri</Button>
                     </Tooltip>
-                    <Button icon={<ClearOutlined />} onClick={handleClearCache}>Önbelleği Temizle</Button>
+                    <Button icon={<ClearOutlined />} onClick={handleClearCache}>Önizleme</Button>
                     <Button icon={<GlobalOutlined />} onClick={() => setIsScrapeModalOpen(true)}>Web'den Öğret</Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={() => {
                         form.setFieldsValue({ category: activeTab });

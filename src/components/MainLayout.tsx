@@ -18,6 +18,8 @@ import {
     BellOutlined,
     RocketOutlined,
     BookOutlined,
+    MenuOutlined,
+    MenuFoldOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -161,16 +163,30 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         />
     );
 
+    const [collapsed, setCollapsed] = useState(false);
+
     return (
         <Layout style={{ minHeight: '100vh' }}>
             <Sider
                 theme="dark"
+                breakpoint="lg"
+                collapsedWidth="0"
+                trigger={null}
+                collapsible
+                collapsed={collapsed}
+                onCollapse={(value) => setCollapsed(value)}
                 width={280}
                 style={{
                     borderRight: 'var(--glass-border)',
                     background: 'var(--container-bg)',
                     backdropFilter: 'blur(var(--glass-blur))',
                     WebkitBackdropFilter: 'blur(var(--glass-blur))',
+                    position: 'fixed',
+                    height: '100vh',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    zIndex: 1010
                 }}
             >
                 <div style={{ height: 80, display: 'flex', alignItems: 'center', padding: '0 32px', borderBottom: 'var(--glass-border)' }}>
@@ -181,17 +197,24 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     mode="inline"
                     selectedKeys={[pathname]}
                     items={items as MenuProps['items']}
-                    onClick={handleMenuClick}
+                    onClick={(e) => {
+                        handleMenuClick(e);
+                        if (window.innerWidth < 992) setCollapsed(true);
+                    }}
                     style={{ border: 'none', marginTop: 24, padding: '0 12px', background: 'transparent' }}
                 />
             </Sider>
 
-            <Layout style={{ background: 'var(--background)' }}>
+            <Layout style={{
+                background: 'var(--background)',
+                marginLeft: collapsed ? 0 : 280,
+                transition: 'all 0.2s',
+            }}>
                 <Header style={{
                     background: 'var(--container-bg)',
                     backdropFilter: 'blur(var(--glass-blur))',
                     WebkitBackdropFilter: 'blur(var(--glass-blur))',
-                    padding: '0 40px',
+                    padding: '0 20px',
                     height: 80,
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -201,32 +224,49 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     top: 0,
                     zIndex: 1000
                 }}>
-                    <div style={{ fontSize: 20, fontWeight: 500, color: 'var(--text-main)' }}>
-                        {items.find((item) => item.key === pathname)?.label || 'Duyuru Merkezi'}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <AntButton
+                            type="text"
+                            icon={collapsed ? <MenuOutlined /> : <MenuFoldOutlined />}
+                            onClick={() => setCollapsed(!collapsed)}
+                            style={{
+                                fontSize: '16px',
+                                width: 40,
+                                height: 40,
+                                color: 'var(--text-secondary)'
+                            }}
+                        />
+                        <div style={{ fontSize: 18, fontWeight: 500, color: 'var(--text-main)', display: 'block' }}>
+                            {items.find((item) => item.key === pathname)?.label || 'Duyuru Merkezi'}
+                        </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                         <Popover placement="bottomRight" title="Son Bildirimler" content={notificationContent} trigger="click">
                             <Badge count={notifications.length} size="small" color="var(--primary-pastel)">
-                                <BellOutlined style={{ fontSize: 22, color: 'var(--text-secondary)', cursor: 'pointer' }} />
+                                <BellOutlined style={{ fontSize: 20, color: 'var(--text-secondary)', cursor: 'pointer' }} />
                             </Badge>
                         </Popover>
 
-                        <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column' }}>
-                            <span style={{ fontWeight: 500, fontSize: 14, color: 'var(--text-main)' }}>{user?.email?.split('@')[0]}</span>
-                            <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{user?.email}</span>
+                        <div style={{ textAlign: 'right', display: 'none', flexDirection: 'column' }} className="user-info-text">
+                            <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--text-main)' }}>{user?.email?.split('@')[0]}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{user?.email}</span>
                         </div>
 
                         <Avatar
                             icon={<UserOutlined />}
-                            size={40}
+                            size={36}
                             style={{ cursor: 'pointer', background: 'var(--input-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
                             onClick={handleLogout}
                         />
                     </div>
                 </Header>
 
-                <Content style={{ padding: '40px', background: 'var(--background)' }}>
+                <Content style={{
+                    padding: window?.innerWidth < 768 ? '16px' : '40px',
+                    background: 'var(--background)',
+                    minHeight: 'calc(100vh - 80px)'
+                }}>
                     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
                         {children}
                     </div>
@@ -246,6 +286,16 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 }
                 .ant-menu-item-selected {
                     background: rgba(168, 199, 250, 0.1) !important;
+                }
+                @media (min-width: 768px) {
+                    .user-info-text {
+                        display: flex !important;
+                    }
+                }
+                @media (max-width: 991px) {
+                    .ant-layout-sider {
+                        box-shadow: 10px 0 30px rgba(0,0,0,0.5);
+                    }
                 }
             `}</style>
         </Layout>
