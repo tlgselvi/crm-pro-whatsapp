@@ -13,5 +13,5 @@ export async function POST(req: Request) {
         system: 'Sen Project Bow CRM asistanısın. Satış odaklı, kısa ve net cevaplar ver. Şirket adı: Bow, senin adın: Bow Asistan.',
     });
 
-    return result.toDataStreamResponse();
+    return result.toTextStreamResponse();
 }
