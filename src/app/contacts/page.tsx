@@ -96,12 +96,12 @@ export default function ContactsPage() {
                 gap: 16
             }}>
                 <Title level={2} style={{ margin: 0 }}>Rehber</Title>
-                <Button type="primary" icon={<UserOutlined />} block={window?.innerWidth < 576}>
+                <Button type="primary" icon={<UserOutlined />} className="add-contact-btn">
                     Kişi Ekle
                 </Button>
             </div>
 
-            <Card variant="borderless" styles={{ body: { padding: window?.innerWidth < 576 ? 0 : 24 } }} className="glass-card">
+            <Card variant="borderless" className="glass-card contacts-card">
                 <Table
                     dataSource={contacts}
                     columns={columns}
@@ -111,6 +111,17 @@ export default function ContactsPage() {
                     scroll={{ x: 'max-content' }}
                 />
             </Card>
+
+            <style jsx>{`
+                @media (max-width: 575px) {
+                    :global(.add-contact-btn) {
+                        width: 100% !important;
+                    }
+                    :global(.contacts-card .ant-card-body) {
+                        padding: 0 !important;
+                    }
+                }
+            `}</style>
         </div>
     );
 }

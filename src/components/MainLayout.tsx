@@ -93,6 +93,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
     const [user, setUser] = useState<User | null>(null);
     const [mounted, setMounted] = useState(false);
     const [notifications, setNotifications] = useState<any[]>([]);
+    const [collapsed, setCollapsed] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -133,9 +134,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         router.refresh();
     };
 
-    if (!mounted) return null;
-    if (pathname === '/login') return <>{children}</>;
-
     const notificationContent = (
         <List
             size="small"
@@ -163,7 +161,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         />
     );
 
-    const [collapsed, setCollapsed] = useState(false);
+    if (!mounted) return null;
+    if (pathname === '/login') return <>{children}</>;
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -199,7 +198,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                     items={items as MenuProps['items']}
                     onClick={(e) => {
                         handleMenuClick(e);
-                        if (window.innerWidth < 992) setCollapsed(true);
+                        if (typeof window !== 'undefined' && window.innerWidth < 992) setCollapsed(true);
                     }}
                     style={{ border: 'none', marginTop: 24, padding: '0 12px', background: 'transparent' }}
                 />
@@ -263,10 +262,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 </Header>
 
                 <Content style={{
-                    padding: window?.innerWidth < 768 ? '16px' : '40px',
                     background: 'var(--background)',
                     minHeight: 'calc(100vh - 80px)'
-                }}>
+                }} className="main-content-layout">
                     <div style={{ animation: 'fadeIn 0.5s ease-out' }}>
                         {children}
                     </div>
@@ -286,6 +284,14 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
                 }
                 .ant-menu-item-selected {
                     background: rgba(168, 199, 250, 0.1) !important;
+                }
+                .main-content-layout {
+                    padding: 40px;
+                }
+                @media (max-width: 767px) {
+                    .main-content-layout {
+                        padding: 16px;
+                    }
                 }
                 @media (min-width: 768px) {
                     .user-info-text {
