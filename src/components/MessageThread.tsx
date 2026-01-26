@@ -10,7 +10,7 @@ import '@chatscope/chat-ui-kit-styles/dist/default/styles.min.css';
 import { supabase, type Message as MessageType, type ConversationWithContact } from '@/lib/supabase';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
-import { useChat } from 'ai/react';
+import { useChat } from '@ai-sdk/react';
 
 interface MessageThreadProps {
     conversation: ConversationWithContact | null;
