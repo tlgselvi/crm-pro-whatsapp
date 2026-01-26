@@ -17,6 +17,7 @@ import {
     NodeIndexOutlined,
     BellOutlined,
     RocketOutlined,
+    BookOutlined,
 } from '@ant-design/icons';
 import { usePathname, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
@@ -71,6 +72,11 @@ const items: MenuItemType[] = [
         key: '/contacts',
         icon: <UserOutlined />,
         label: 'Rehber',
+    },
+    {
+        key: '/dashboard/knowledge',
+        icon: <BookOutlined />,
+        label: 'Eğitim (AI)',
     },
     {
         key: '/settings',
