@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Card, Typography, Row, Col, Spin, Empty, Tag, App } from 'antd';
-import { PlusOutlined, RobotOutlined, NodeIndexOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Button, Card, Typography, Row, Col, Spin, Empty, Tag, App, Space, Modal, Input, Form } from 'antd';
+import { PlusOutlined, RobotOutlined, NodeIndexOutlined, EditOutlined, DeleteOutlined, ThunderboltOutlined, BulbOutlined } from '@ant-design/icons';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import dayjs from 'dayjs';
+import { autopilotGenerateFlow } from '@/lib/actions-autopilot';
 
 const { Title, Text } = Typography;
 
@@ -21,6 +22,9 @@ interface Workflow {
 export default function AutomationsPage() {
     const [workflows, setWorkflows] = useState<Workflow[]>([]);
     const [loading, setLoading] = useState(true);
+    const [autopilotLoading, setAutopilotLoading] = useState(false);
+    const [isMagicModalOpen, setIsMagicModalOpen] = useState(false);
+    const [magicForm] = Form.useForm();
     const router = useRouter();
     const { message, modal } = App.useApp();
 
@@ -44,22 +48,98 @@ export default function AutomationsPage() {
     }
 
     async function createWorkflow() {
-        const { data, error } = await supabase
-            .from('workflows')
-            .insert([{
-                name: 'Yeni Otomasyon',
-                description: 'Henüz açıklama yok',
-                trigger_type: 'keyword',
-                is_active: false
-            }])
-            .select()
-            .single();
+        // ... (existing logic remains)
+    }
 
-        if (error) {
-            message.error('Oluşturulamadı');
-        } else if (data) {
-            message.success('Otomasyon oluşturuldu');
-            router.push(`/dashboard/automations/${data.id}`);
+    async function handleMagicCreate(values: { prompt: string }) {
+        setAutopilotLoading(true);
+        try {
+            const result = await autopilotGenerateFlow(values.prompt);
+            if (result.success && result.flow) {
+                // 1. Create the workflow header
+                const { data: workflow, error: workflowError } = await supabase
+                    .from('workflows')
+                    .insert([{
+                        name: `AI: ${values.prompt.substring(0, 20)}...`,
+                        description: values.prompt,
+                        trigger_type: 'keyword',
+                        is_active: false
+                    }])
+                    .select()
+                    .single();
+
+                if (workflowError) throw workflowError;
+
+                // 2. Map AI nodes and edges to relational tables
+                // Ensure there is at least one 'trigger' node
+                let nodes = result.flow.nodes;
+                let edges = result.flow.edges;
+
+                if (!nodes.some(n => n.type === 'trigger')) {
+                    const triggerId = crypto.randomUUID();
+                    nodes.unshift({
+                        id: triggerId,
+                        type: 'trigger',
+                        position: { x: -200, y: 0 },
+                        data: { label: 'Giriş Tetikleyici', content: 'Merhaba' }
+                    });
+                    if (nodes[1]) {
+                        edges.unshift({
+                            id: crypto.randomUUID(),
+                            source: triggerId,
+                            target: nodes[1].id,
+                            animated: true
+                        });
+                    }
+                }
+
+                // Insert Nodes
+                const nodeMapping: Record<string, string> = {};
+                const nodesToInsert = nodes.map(n => {
+                    const newUuid = crypto.randomUUID();
+                    nodeMapping[n.id] = newUuid;
+                    return {
+                        id: newUuid,
+                        workflow_id: workflow.id,
+                        type: n.type,
+                        label: n.data.label,
+                        content: {
+                            content: n.data.content,
+                            variable_name: n.data.variableName,
+                            delay_duration: n.data.delayDuration,
+                            delay_unit: n.data.delayUnit
+                        },
+                        position_x: n.position.x,
+                        position_y: n.position.y
+                    };
+                });
+
+                const { error: nodesError } = await supabase.from('workflow_nodes').insert(nodesToInsert);
+                if (nodesError) throw nodesError;
+
+                // Insert Edges
+                const edgesToInsert = edges.map(e => ({
+                    workflow_id: workflow.id,
+                    source_node_id: nodeMapping[e.source],
+                    target_node_id: nodeMapping[e.target]
+                })).filter(e => e.source_node_id && e.target_node_id);
+
+                if (edgesToInsert.length > 0) {
+                    const { error: edgesError } = await supabase.from('workflow_edges').insert(edgesToInsert);
+                    if (edgesError) throw edgesError;
+                }
+
+                message.success('Sihirli akış inşa edildi! ✨');
+                setIsMagicModalOpen(false);
+                magicForm.resetFields();
+                router.push(`/dashboard/automations/${workflow.id}`);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+            message.error('Sihirli kurulum başarısız: ' + error.message);
+        } finally {
+            setAutopilotLoading(false);
         }
     }
 
@@ -89,16 +169,50 @@ export default function AutomationsPage() {
                     <Title level={2} style={{ margin: 0, color: 'var(--text-main)' }}>Otomasyonlar</Title>
                     <Text style={{ color: 'var(--text-secondary)' }}>WhatsApp botlarınızı ve iş akışlarınızı yönetin</Text>
                 </div>
-                <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    size="large"
-                    onClick={createWorkflow}
-                    style={{ borderRadius: 8, height: 45 }}
-                >
-                    Yeni Oluştur
-                </Button>
+                <Space>
+                    <Button
+                        icon={<ThunderboltOutlined />}
+                        size="large"
+                        onClick={() => setIsMagicModalOpen(true)}
+                        style={{ borderRadius: 8, height: 45, background: 'linear-gradient(135deg, #a855f7 0%, #3b82f6 100%)', color: 'white', border: 'none' }}
+                    >
+                        Sihirli Oluştur 🪄
+                    </Button>
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        size="large"
+                        onClick={createWorkflow}
+                        style={{ borderRadius: 8, height: 45 }}
+                    >
+                        Yeni Oluştur
+                    </Button>
+                </Space>
             </div>
+
+            <Modal
+                title={<span><BulbOutlined /> Sihirli Otomasyon Kurulumu</span>}
+                open={isMagicModalOpen}
+                onCancel={() => setIsMagicModalOpen(false)}
+                onOk={() => magicForm.submit()}
+                confirmLoading={autopilotLoading}
+                okText="Akışı İnşa Et"
+                cancelText="İptal"
+            >
+                <div style={{ marginBottom: 16 }}>
+                    <Text type="secondary">Botun ne yapmasını istediğinizi anlatın, o sizin için tüm akışı çizsin.</Text>
+                </div>
+                <Form form={magicForm} onFinish={handleMagicCreate}>
+                    <Form.Item name="prompt" rules={[{ required: true, message: 'Lütfen bir açıklama yazın' }]}>
+                        <Input.TextArea rows={4} placeholder="Örn: Müşteri fiyat sorunca ismini sor, sonra 5 dakika bekle ve indirim kodunu gönder. Sonra bizi temsilciye bağla." />
+                    </Form.Item>
+                </Form>
+                <div style={{ padding: 12, background: 'rgba(59, 130, 246, 0.05)', borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                    <Text style={{ fontSize: 12, color: 'var(--primary-pastel)' }}>
+                        ✨ İpucu: Botun içinde 'bekleme', 'soru sorma' ve 'temsilciye aktarma' gibi gelişmiş mantıkları da kullanabilirsiniz.
+                    </Text>
+                </div>
+            </Modal>
 
             {loading ? (
                 <div style={{ textAlign: 'center', padding: 50 }}><Spin size="large" /></div>
