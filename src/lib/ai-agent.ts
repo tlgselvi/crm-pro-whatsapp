@@ -54,9 +54,13 @@ async function getActiveRules() {
 }
 
 /**
- * Generates an AI response using Hierarchical Context Injection.
+ * Generates an AI response using Hierarchical Context Injection and Multimodal support.
  */
-export async function generateAIResponse(userMessage: string, contactId: string) {
+export async function generateAIResponse(
+    userMessage: string,
+    contactId: string,
+    attachments?: { url: string, type: string }[]
+) {
     // 1. Fetch AI Settings & Global Rules
     const [settingsRes, rules] = await Promise.all([
         supabase.from('ai_settings').select('*').single(),
@@ -93,13 +97,33 @@ Eğer bir kural, bilgi bankasındaki bir veriyle çelişirse, her zaman KURALI u
 
 ### BİLGİ BANKASI BAĞLAMI:
 ${knowledgeContext || 'Şu an bu konuda özel bir bilgi yok, genel şirket bilgilerinle yanıt ver.'}
+
+### MULTIMODAL TALIMATLAR:
+- Eğer bir görsel eklenmişse, görseldeki yazıları, ürünleri veya dekont verilerini analiz et.
+- Eğer ses kaydı eklenmişse (transkript sağlanmış olabilir), sesin duygusunu ve talebini anla.
 `.trim();
 
-    // 4. Generate Answer
+    // 4. Construct Multimodal Prompt
+    const contentParts: any[] = [{ type: 'text', text: userMessage }];
+
+    if (attachments && attachments.length > 0) {
+        for (const attachment of attachments) {
+            if (attachment.type.startsWith('image/')) {
+                contentParts.push({ type: 'image', image: new URL(attachment.url) });
+            } else if (attachment.type.startsWith('audio/')) {
+                // Audio support depends on the model's audio capabilities
+                contentParts.push({ type: 'file', data: new URL(attachment.url), mimeType: attachment.type });
+            }
+        }
+    }
+
+    // 5. Generate Answer
     const { text } = await generateText({
         model: google('gemini-2.5-flash'),
         system: fullSystemPrompt,
-        prompt: userMessage,
+        messages: [
+            { role: 'user', content: contentParts }
+        ],
     });
 
     return text;

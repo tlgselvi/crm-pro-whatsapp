@@ -47,6 +47,7 @@ export interface Message {
   platform: 'whatsapp' | 'web' | 'internal';
   media_url?: string;
   media_type?: string;
+  private?: boolean;
 }
 
 export interface Task {

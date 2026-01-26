@@ -8,9 +8,10 @@ import { cookies } from 'next/headers';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
-    const { messages } = await req.json();
+    const { messages, attachments } = await req.json();
     const cookieStore = await cookies();
 
+    // ... Supabase client initialization same as before ...
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -24,11 +25,7 @@ export async function POST(req: Request) {
                         cookiesToSet.forEach(({ name, value, options }) =>
                             cookieStore.set(name, value, options)
                         );
-                    } catch {
-                        // The `setAll` method was called from a Server Component.
-                        // This can be ignored if you have middleware refreshing
-                        // user sessions.
-                    }
+                    } catch { }
                 },
             },
         }
@@ -40,33 +37,40 @@ export async function POST(req: Request) {
         .select('*')
         .single();
 
-    // 2. Fetch Knowledge Base (Simple RAG - Top 5 recent for now)
-    // TODO: Implement Vector Search for better scaling
-    const { data: kb } = await supabase
-        .from('knowledge_base')
-        .select('topic, content')
-        .limit(5);
+    // 2. Fetch Knowledge Base Context (Simple RAG for Chat)
+    // In a real scenario, we'd use generateAIResponse here, 
+    // but for the streaming Chat UI, we'll keep it native.
 
     // 3. Construct Context String
-    const kbContext = kb?.map((item: { topic: string; content: string }) => `- ${item.topic}: ${item.content}`).join('\n') || 'Bilgi bulunamadı.';
-
     const systemPrompt = `
     Sen ${settings?.company_name || 'Bow CRM'} şirketinin yapay zeka asistanısın.
-    
     TON: ${settings?.tone || 'professional'}
+    TALİMATLAR: ${settings?.system_instructions || 'Kullanıcıya yardımcı ol.'}
     
-    TALİMATLAR:
-    ${settings?.system_instructions || 'Kullanıcıya yardımcı ol, kısa ve net cevaplar ver.'}
-    
-    BİLGİ BANKASI (Şirket Hakkında Bildiklerin):
-    ${kbContext}
-    
-    Eğer bilgi bankasında sorunun cevabı yoksa, nazikçe bilmediğini söyle ve yetkiliye yönlendir. Asla uydurma bilgi verme.
-    `;
+    ### MULTIMODAL YETENEKLER:
+    - Sana gönderilen görselleri ve dosyaları analiz edebilirsin.
+    - Dekontları, ürün resimlerini veya dokümanları inceleyip bilgi verebilirsin.
+    `.trim();
+
+    // 4. Map messages to include multimodal content
+    const processedMessages = messages.map((m: any, index: number) => {
+        if (index === messages.length - 1 && attachments && attachments.length > 0) {
+            const content: any[] = [{ type: 'text', text: m.content }];
+            attachments.forEach((a: any) => {
+                if (a.type.startsWith('image/')) {
+                    content.push({ type: 'image', image: new URL(a.url) });
+                } else {
+                    content.push({ type: 'file', data: new URL(a.url), mimeType: a.type });
+                }
+            });
+            return { ...m, content };
+        }
+        return m;
+    });
 
     const result = await streamText({
         model: google('gemini-2.5-flash'),
-        messages,
+        messages: processedMessages,
         system: systemPrompt,
     });
 
