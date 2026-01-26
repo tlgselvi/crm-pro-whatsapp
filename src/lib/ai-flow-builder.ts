@@ -26,7 +26,7 @@ const WorkflowSchema = z.object({
 
 export async function generateFlowFromDescription(description: string) {
     const { object } = await generateObject({
-        model: google('gemini-2.0-flash'), // Using 2.0 as per the 2.5 flash availability in user rules (assuming 2.0 for sdk compatibility if 2.5 not direct)
+        model: google('gemini-1.5-flash'), // Optimized for free tier reliability
         schema: WorkflowSchema,
         system: `You are an expert WhatsApp Automation Architect. 
     Your task is to create a valid JSON workflow based on a user's verbal description. 

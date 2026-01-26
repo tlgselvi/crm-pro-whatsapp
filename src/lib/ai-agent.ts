@@ -52,7 +52,7 @@ export async function generateAIResponse(userMessage: string, contactId: string)
 
     // 3. Generate Answer
     const { text } = await generateText({
-        model: google('gemini-2.5-flash'),
+        model: google('gemini-1.5-flash'),
         system: `${systemPrompt}\n\n${companyContext}\n\nBilgi Bankası Bağlamı:\n${context}`,
         prompt: userMessage,
     });
