@@ -21,7 +21,19 @@ export interface Contact {
   assigned_to?: string;
   created_at: string;
   updated_at: string;
+  // DESE CRM Alanları
+  segment?: 'YENI_HAVUZ' | 'BAKIM' | 'MALZEME' | 'TADILAT' | 'SAUNA_SPA';
   lead_score?: number;
+  lead_temperature?: 'HOT' | 'WARM' | 'COLD';
+  pipeline_stage?: string;
+  source?: string;
+  first_message?: string;
+  next_action?: string;
+  offer_amount?: number;
+  won_amount?: number;
+  notes?: string;
+  last_contact_at?: string;
+  // Legacy
   last_engagement_score?: number;
   lifecycle_stage?: 'lead' | 'qualified' | 'customer' | 'champion';
 }

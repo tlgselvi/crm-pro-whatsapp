@@ -103,7 +103,7 @@ export default function LoginPage() {
                     <div style={{
                         width: 72,
                         height: 72,
-                        background: 'linear-gradient(135deg, #1d4ed8 0%, #7e22ce 100%)',
+                        background: 'linear-gradient(135deg, #00bcd4 0%, #1a237e 100%)',
                         borderRadius: 20,
                         display: 'flex',
                         alignItems: 'center',
@@ -115,12 +115,17 @@ export default function LoginPage() {
                     }}>
                         <LoginOutlined />
                     </div>
-                    <Title level={2} style={{ margin: '0 0 8px 0', color: 'white', fontWeight: 600, letterSpacing: '-0.5px' }}>
-                        Hoş Geldiniz
+                    <Title level={2} style={{ margin: '0 0 4px 0', color: 'white', fontWeight: 700, letterSpacing: '-0.5px' }}>
+                        DESE Havuz CRM
                     </Title>
-                    <Text style={{ color: 'rgba(255, 255, 255, 0.45)', fontSize: 15 }}>
-                        CRM Pro panelinize giriş yapın
+                    <Text style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: 14, fontWeight: 500, letterSpacing: '0.5px' }}>
+                        MÜŞTERİ YÖNETİM SİSTEMİ
                     </Text>
+                    <div style={{ marginTop: 8 }}>
+                        <Text style={{ color: 'rgba(255, 255, 255, 0.3)', fontSize: 12 }}>
+                            Hoş Geldiniz — Lütfen giriş yapın
+                        </Text>
+                    </div>
                 </div>
 
                 <Form
