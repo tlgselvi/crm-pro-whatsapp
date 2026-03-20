@@ -467,6 +467,20 @@ export default function PipelinePage() {
                                                                             />
                                                                         </Popconfirm>
                                                                     </div>
+                                                                    {/* Lead temperature tag — between name and phone */}
+                                                                    {contact.lead_temperature && (
+                                                                        <div style={{ marginTop: 6, marginBottom: 2 }}>
+                                                                            {contact.lead_temperature === 'HOT' && (
+                                                                                <Tag color="red" icon={<FireOutlined />} style={{ fontSize: 11 }}>Sıcak</Tag>
+                                                                            )}
+                                                                            {contact.lead_temperature === 'WARM' && (
+                                                                                <Tag color="orange" style={{ fontSize: 11 }}>Ilık</Tag>
+                                                                            )}
+                                                                            {contact.lead_temperature === 'COLD' && (
+                                                                                <Tag color="blue" style={{ fontSize: 11 }}>Soğuk</Tag>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
                                                                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                                                                         <PhoneOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                         {contact.phone}
@@ -477,10 +491,9 @@ export default function PipelinePage() {
                                                                             {contact.email}
                                                                         </div>
                                                                     )}
-                                                                    {/* Lead temperature mini-badge */}
-                                                                    {contact.lead_temperature && (
-                                                                        <div style={{ marginTop: 8 }}>
-                                                                            {temperatureTag(contact.lead_temperature)}
+                                                                    {contact.source && (
+                                                                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 4 }}>
+                                                                            {contact.source}
                                                                         </div>
                                                                     )}
                                                                     <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>

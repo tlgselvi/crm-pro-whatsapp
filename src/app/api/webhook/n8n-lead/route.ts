@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+/**
+ * n8n pipeline_stage → CRM stage mapping
+ * Webhook'tan gelen pipeline aşamasını UI aşamasına çevirir.
+ */
+function mapPipelineStage(pipelineStage: string): string {
+  const map: Record<string, string> = {
+    new_lead: 'new',
+    qualification: 'contacted',
+    first_contact: 'contacted',
+    site_visit: 'qualified',
+    offer_sent: 'proposal',
+    negotiation: 'negotiation',
+    won: 'won',
+    lost: 'lost',
+  };
+  return map[pipelineStage] ?? 'new';
+}
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -68,6 +86,7 @@ export async function POST(request: NextRequest) {
     if (existingContact) {
       // Mevcut contact'ı güncelle
       contactId = existingContact.id;
+      const mappedStage = pipelineStage ? mapPipelineStage(pipelineStage) : undefined;
       await supabase
         .from('contacts')
         .update({
@@ -76,6 +95,7 @@ export async function POST(request: NextRequest) {
           lead_score: leadScore ?? undefined,
           lead_temperature: leadTemp || undefined,
           pipeline_stage: pipelineStage || undefined,
+          stage: mappedStage,
           source: source || undefined,
           notes: notes || undefined,
           last_contact_at: new Date().toISOString(),
@@ -93,6 +113,7 @@ export async function POST(request: NextRequest) {
           lead_score: leadScore || 0,
           lead_temperature: leadTemp || 'COLD',
           pipeline_stage: pipelineStage || 'new_lead',
+          stage: mapPipelineStage(pipelineStage || 'new_lead'),
           source: source || 'whatsapp_organic',
           first_message: firstMessage || null,
           notes: notes || null,

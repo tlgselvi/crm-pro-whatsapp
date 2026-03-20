@@ -1,7 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card, Row, Col, Statistic, List, Typography, Badge, Progress, Avatar, Tag, Space, Button } from 'antd';
+import React, { useEffect, useState, useCallback } from 'react';
+import {
+    Card, Row, Col, Statistic, List, Typography, Badge,
+    Progress, Avatar, Tag, Space, Button, Spin, Empty, Checkbox, Tooltip
+} from 'antd';
 import {
     MessageOutlined,
     UserOutlined,
@@ -10,204 +13,543 @@ import {
     FireOutlined,
     ThunderboltOutlined,
     ArrowRightOutlined,
-    WarningOutlined
+    WarningOutlined,
+    TrophyOutlined,
+    TeamOutlined,
+    CalendarOutlined,
 } from '@ant-design/icons';
 import { supabase } from '@/lib/supabase';
 import dayjs from 'dayjs';
 import relativeTime from 'dayjs/plugin/relativeTime';
+import 'dayjs/locale/tr';
 
 dayjs.extend(relativeTime);
+dayjs.locale('tr');
 
 const { Title, Text } = Typography;
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface DashboardStats {
     totalContacts: number;
     activeConversations: number;
     totalMessages: number;
-    avgResponseTime: string;
+    wonDeals: number;
+    lostDeals: number;
+    todayLeads: number;
+    pendingTasks: number;
 }
+
+interface PipelineStage {
+    stage: string;
+    count: number;
+}
+
+interface RecentConv {
+    id: string;
+    contact_name: string;
+    last_message_at: string;
+    unread_count: number;
+}
+
+interface Task {
+    id: string;
+    title: string;
+    description?: string;
+    due_date?: string;
+    is_completed: boolean;
+    contact_id?: string;
+    contact_name?: string;
+}
+
+const STAGE_LABELS: Record<string, string> = {
+    new: 'Yeni',
+    contacted: 'İletişim',
+    qualified: 'Nitelikli',
+    proposal: 'Teklif',
+    negotiation: 'Pazarlık',
+    won: 'Kazanıldı',
+    lost: 'Kaybedildi',
+};
+
+const STAGE_COLORS: Record<string, string> = {
+    new: '#1890ff',
+    contacted: '#52c41a',
+    qualified: '#faad14',
+    proposal: '#722ed1',
+    negotiation: '#eb2f96',
+    won: '#00b96b',
+    lost: '#ff4d4f',
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
     const [mounted, setMounted] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStats>({
         totalContacts: 0,
         activeConversations: 0,
         totalMessages: 0,
-        avgResponseTime: '0m',
+        wonDeals: 0,
+        lostDeals: 0,
+        todayLeads: 0,
+        pendingTasks: 0,
     });
-    const [pipeline, setPipeline] = useState<any[]>([]);
-    const [urgentTickets, setUrgentTickets] = useState<any[]>([]);
+    const [pipeline, setPipeline] = useState<PipelineStage[]>([]);
+    const [recentConvs, setRecentConvs] = useState<RecentConv[]>([]);
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [tasksLoading, setTasksLoading] = useState(false);
+
+    const fetchAll = useCallback(async () => {
+        setLoading(true);
+        try {
+            const todayStart = dayjs().startOf('day').toISOString();
+
+            const [
+                { count: totalContacts },
+                { count: activeConversations },
+                { count: totalMessages },
+                { count: wonDeals },
+                { count: lostDeals },
+                { count: todayLeads },
+                { data: pipelineRaw },
+                { data: convRaw },
+            ] = await Promise.all([
+                supabase.from('contacts').select('*', { count: 'exact', head: true }),
+                supabase.from('conversations').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+                supabase.from('messages').select('*', { count: 'exact', head: true }),
+                supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('stage', 'won'),
+                supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('stage', 'lost'),
+                supabase.from('contacts').select('*', { count: 'exact', head: true }).gte('created_at', todayStart),
+                supabase.from('contacts').select('stage').neq('stage', null),
+                supabase.from('conversations')
+                    .select('id, last_message_at, unread_count, contacts(name)')
+                    .order('last_message_at', { ascending: false })
+                    .limit(5),
+            ]);
+
+            // Pipeline aggregation
+            const stageMap: Record<string, number> = {};
+            (pipelineRaw ?? []).forEach((c: any) => {
+                if (c.stage) stageMap[c.stage] = (stageMap[c.stage] ?? 0) + 1;
+            });
+            const pipelineData = Object.entries(stageMap).map(([stage, count]) => ({ stage, count }));
+
+            // Recent conversations
+            const recentData: RecentConv[] = (convRaw ?? []).map((c: any) => ({
+                id: c.id,
+                contact_name: c.contacts?.name ?? 'Bilinmeyen',
+                last_message_at: c.last_message_at,
+                unread_count: c.unread_count ?? 0,
+            }));
+
+            // Pending tasks count
+            const { count: pendingTasks } = await supabase
+                .from('tasks')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_completed', false);
+
+            setStats({
+                totalContacts: totalContacts ?? 0,
+                activeConversations: activeConversations ?? 0,
+                totalMessages: totalMessages ?? 0,
+                wonDeals: wonDeals ?? 0,
+                lostDeals: lostDeals ?? 0,
+                todayLeads: todayLeads ?? 0,
+                pendingTasks: pendingTasks ?? 0,
+            });
+            setPipeline(pipelineData);
+            setRecentConvs(recentData);
+        } catch (err) {
+            console.error('Dashboard veri hatası:', err);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const fetchTasks = useCallback(async () => {
+        setTasksLoading(true);
+        try {
+            const { data } = await supabase
+                .from('tasks')
+                .select('*, contacts(name)')
+                .eq('is_completed', false)
+                .order('due_date', { ascending: true })
+                .limit(10);
+
+            const mapped: Task[] = (data ?? []).map((t: any) => ({
+                id: t.id,
+                title: t.title,
+                description: t.description,
+                due_date: t.due_date,
+                is_completed: t.is_completed,
+                contact_id: t.contact_id,
+                contact_name: t.contacts?.name,
+            }));
+            setTasks(mapped);
+        } catch (err) {
+            console.error('Görevler hatası:', err);
+        } finally {
+            setTasksLoading(false);
+        }
+    }, []);
 
     useEffect(() => {
         setMounted(true);
-        fetchStats();
-        fetchPipeline();
-        fetchUrgentTickets();
-    }, []);
+        fetchAll();
+        fetchTasks();
+    }, [fetchAll, fetchTasks]);
 
-    if (!mounted) return null;
-
-    async function fetchStats() {
+    async function completeTask(taskId: string) {
         try {
-            const { count: contactCount } = await supabase.from('contacts').select('*', { count: 'exact', head: true });
-            const { count: convCount } = await supabase.from('conversations').select('*', { count: 'exact', head: true }).eq('status', 'active');
-            const { count: msgCount } = await supabase.from('messages').select('*', { count: 'exact', head: true });
-
-            setStats({
-                totalContacts: contactCount || 0,
-                activeConversations: convCount || 0,
-                totalMessages: msgCount || 0,
-                avgResponseTime: '12dk', // Mock or calculate
-            });
-        } catch (error) {
-            console.error('Error fetching stats:', error);
+            await supabase
+                .from('tasks')
+                .update({ is_completed: true, updated_at: new Date().toISOString() })
+                .eq('id', taskId);
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+            setStats(prev => ({ ...prev, pendingTasks: Math.max(0, prev.pendingTasks - 1) }));
+        } catch (err) {
+            console.error('Görev tamamlama hatası:', err);
         }
     }
 
-    async function fetchPipeline() {
-        // Stages: lead, qualified, champion
-        const stages = ['lead', 'qualified', 'customer', 'champion'];
-        const pipelineData = await Promise.all(stages.map(async (stage) => {
-            const { count } = await supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('lifecycle_stage', stage);
-            return { stage, count: count || 0 };
-        }));
-        setPipeline(pipelineData);
-    }
+    if (!mounted) return null;
 
-    async function fetchUrgentTickets() {
-        const { data } = await supabase
-            .from('tickets')
-            .select('*, contacts(*)')
-            .eq('status', 'open')
-            .order('priority', { ascending: false }) // Urgent, High, etc.
-            .limit(5);
-        setUrgentTickets(data || []);
-    }
+    const totalPipelineContacts = pipeline.reduce((acc, p) => acc + p.count, 0);
+    const conversionRate = totalPipelineContacts > 0
+        ? Math.round((stats.wonDeals / totalPipelineContacts) * 100)
+        : 0;
+    const lossRate = totalPipelineContacts > 0
+        ? Math.round((stats.lostDeals / totalPipelineContacts) * 100)
+        : 0;
 
     return (
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 0' }}>
+            {/* ── Header ───────────────────────────────────────────────────── */}
             <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
                 <div>
                     <Title level={2} style={{ margin: 0, color: 'var(--text-main)' }}>Elite Satış Paneli</Title>
-                    <Text style={{ fontSize: 16, color: 'var(--text-secondary)' }}>Satış hattı ve acil durum takibi.</Text>
+                    <Text style={{ fontSize: 16, color: 'var(--text-secondary)' }}>
+                        Satış hattı ve performans özeti — {dayjs().format('D MMMM YYYY')}
+                    </Text>
                 </div>
                 <Tag color="gold" icon={<ThunderboltOutlined />} style={{ padding: '4px 12px', borderRadius: 20 }}>
-                    Infinity Engine: Aktif
+                    Canlı Veri
                 </Tag>
             </div>
 
-            {/* PIPELINE VISUALIZATION */}
-            <Card variant="borderless" style={{ marginBottom: 24, background: 'var(--container-bg)', overflow: 'hidden' }}>
-                <div style={{ marginBottom: 16 }}>
-                    <Title level={4} style={{ margin: 0, color: 'var(--text-main)' }}>Satış Boru Hattı (Sales Pipeline)</Title>
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: 80 }}>
+                    <Spin size="large" />
+                    <div style={{ color: 'var(--text-secondary)', marginTop: 16 }}>Veriler yükleniyor…</div>
                 </div>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '20px 40px',
-                    position: 'relative'
-                }}>
-                    {pipeline.map((p, i) => (
-                        <React.Fragment key={p.stage}>
-                            <div style={{ textAlign: 'center', flex: 1 }}>
-                                <div style={{ fontSize: 24, fontWeight: 'bold', color: 'var(--primary)' }}>{p.count}</div>
-                                <Text strong style={{ textTransform: 'capitalize' }}>{p.stage}</Text>
-                            </div>
-                            {i < pipeline.length - 1 && (
-                                <ArrowRightOutlined style={{ color: 'var(--text-tertiary)', fontSize: 20 }} />
-                            )}
-                        </React.Fragment>
-                    ))}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        width: '100%',
-                        height: 4,
-                        background: 'linear-gradient(90deg, #2563eb, #7c3aed, #ec4899)'
-                    }} />
-                </div>
-            </Card>
+            ) : (
+                <>
+                    {/* ── KPI Stats ─────────────────────────────────────────── */}
+                    <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                        <Col xs={12} sm={8} lg={4}>
+                            <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
+                                <Statistic
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Toplam Kişi</Text>}
+                                    value={stats.totalContacts}
+                                    prefix={<TeamOutlined style={{ color: '#1890ff' }} />}
+                                    valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} lg={4}>
+                            <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
+                                <Statistic
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Aktif Konuşma</Text>}
+                                    value={stats.activeConversations}
+                                    prefix={<MessageOutlined style={{ color: '#52c41a' }} />}
+                                    valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} lg={4}>
+                            <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
+                                <Statistic
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Toplam Mesaj</Text>}
+                                    value={stats.totalMessages}
+                                    prefix={<MessageOutlined style={{ color: '#722ed1' }} />}
+                                    valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} lg={4}>
+                            <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
+                                <Statistic
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Kazanılan</Text>}
+                                    value={stats.wonDeals}
+                                    prefix={<TrophyOutlined style={{ color: '#00b96b' }} />}
+                                    valueStyle={{ color: '#00b96b', fontSize: 22 }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} lg={4}>
+                            <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
+                                <Statistic
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Bugün Gelen</Text>}
+                                    value={stats.todayLeads}
+                                    prefix={<UserOutlined style={{ color: '#faad14' }} />}
+                                    valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={12} sm={8} lg={4}>
+                            <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
+                                <Statistic
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Bekleyen Görev</Text>}
+                                    value={stats.pendingTasks}
+                                    prefix={<ClockCircleOutlined style={{ color: '#ff4d4f' }} />}
+                                    valueStyle={{ color: stats.pendingTasks > 0 ? '#ff4d4f' : 'var(--text-main)', fontSize: 22 }}
+                                />
+                            </Card>
+                        </Col>
+                    </Row>
 
-            <Row gutter={[24, 24]} style={{ marginBottom: 40 }}>
-                <Col xs={24} lg={16}>
-                    <Card
-                        title={<Space><WarningOutlined style={{ color: '#ff4d4f' }} /> Acil Müdahale Bekleyenler</Space>}
-                        variant="borderless"
-                    >
-                        <List
-                            dataSource={urgentTickets}
-                            renderItem={(item: any) => (
-                                <List.Item
-                                    style={{
-                                        padding: '16px',
-                                        borderRadius: 12,
-                                        marginBottom: 12,
-                                        background: item.priority === 'urgent' ? 'rgba(255, 77, 79, 0.05)' : 'transparent',
-                                        border: item.priority === 'urgent' ? '1px solid rgba(255, 77, 79, 0.1)' : '1px solid var(--border-color)'
-                                    }}
-                                    actions={[<Button type="link">Dosyaya Git</Button>]}
-                                >
-                                    <List.Item.Meta
-                                        avatar={<Avatar style={{ background: item.priority === 'urgent' ? '#ff4d4f' : '#faad14' }} icon={<FireOutlined />} />}
-                                        title={
-                                            <Space>
-                                                <Text strong>{item.title}</Text>
-                                                <Tag color={item.priority === 'urgent' ? 'red' : 'orange'}>{item.priority?.toUpperCase()}</Tag>
-                                            </Space>
-                                        }
-                                        description={
-                                            <Space direction="vertical" size={0}>
-                                                <Text>{item.contacts?.name} - Score: {item.contacts?.lead_score}</Text>
-                                                <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(item.created_at).fromNow()}</Text>
-                                            </Space>
-                                        }
+                    {/* ── Pipeline Visualization ────────────────────────────── */}
+                    <Card variant="borderless" style={{ marginBottom: 24, background: 'var(--container-bg)', overflow: 'hidden' }}>
+                        <div style={{ marginBottom: 16 }}>
+                            <Title level={4} style={{ margin: 0, color: 'var(--text-main)' }}>Satış Boru Hattı</Title>
+                        </div>
+                        {pipeline.length === 0 ? (
+                            <Empty description={<Text style={{ color: 'var(--text-secondary)' }}>Henüz lead yok</Text>} />
+                        ) : (
+                            <div style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                padding: '20px 40px',
+                                position: 'relative',
+                                flexWrap: 'wrap',
+                                gap: 8,
+                            }}>
+                                {pipeline.map((p, i) => (
+                                    <React.Fragment key={p.stage}>
+                                        <div style={{ textAlign: 'center', flex: '0 0 auto' }}>
+                                            <div style={{
+                                                fontSize: 28,
+                                                fontWeight: 700,
+                                                color: STAGE_COLORS[p.stage] ?? 'var(--primary)',
+                                            }}>
+                                                {p.count}
+                                            </div>
+                                            <Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>
+                                                {STAGE_LABELS[p.stage] ?? p.stage}
+                                            </Text>
+                                        </div>
+                                        {i < pipeline.length - 1 && (
+                                            <ArrowRightOutlined style={{ color: 'var(--text-secondary)', fontSize: 16, opacity: 0.4 }} />
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                                <div style={{
+                                    position: 'absolute',
+                                    bottom: 0, left: 0,
+                                    width: '100%', height: 3,
+                                    background: 'linear-gradient(90deg, #1890ff, #722ed1, #00b96b)',
+                                }} />
+                            </div>
+                        )}
+                    </Card>
+
+                    <Row gutter={[24, 24]} style={{ marginBottom: 24 }}>
+                        {/* ── Recent Conversations ───────────────────────────── */}
+                        <Col xs={24} lg={14}>
+                            <Card
+                                variant="borderless"
+                                title={
+                                    <Space>
+                                        <MessageOutlined style={{ color: '#1890ff' }} />
+                                        <span style={{ color: 'var(--text-main)' }}>Son Konuşmalar</span>
+                                    </Space>
+                                }
+                                style={{ background: 'var(--container-bg)', height: '100%' }}
+                            >
+                                {recentConvs.length === 0 ? (
+                                    <Empty description={<Text style={{ color: 'var(--text-secondary)' }}>Henüz konuşma yok</Text>} />
+                                ) : (
+                                    <List
+                                        dataSource={recentConvs}
+                                        renderItem={(item) => (
+                                            <List.Item
+                                                style={{
+                                                    padding: '12px 0',
+                                                    borderBottom: '1px solid var(--border-color)',
+                                                }}
+                                            >
+                                                <List.Item.Meta
+                                                    avatar={
+                                                        <Avatar
+                                                            icon={<UserOutlined />}
+                                                            style={{ background: '#28292a', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                                                        />
+                                                    }
+                                                    title={
+                                                        <Space>
+                                                            <Text strong style={{ color: 'var(--text-main)' }}>{item.contact_name}</Text>
+                                                            {item.unread_count > 0 && (
+                                                                <Badge count={item.unread_count} size="small" />
+                                                            )}
+                                                        </Space>
+                                                    }
+                                                    description={
+                                                        <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                                            {dayjs(item.last_message_at).fromNow()}
+                                                        </Text>
+                                                    }
+                                                />
+                                            </List.Item>
+                                        )}
                                     />
-                                </List.Item>
-                            )}
-                        />
-                    </Card>
-                </Col>
+                                )}
+                            </Card>
+                        </Col>
 
-                <Col xs={24} lg={8}>
-                    <Card title="Sistem Performansı" variant="borderless">
-                        <div style={{ marginBottom: 24 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <Text>Kayıp Oranı</Text>
-                                <Text strong>2%</Text>
+                        {/* ── Sistem Performansı ────────────────────────────── */}
+                        <Col xs={24} lg={10}>
+                            <Card
+                                variant="borderless"
+                                title={<span style={{ color: 'var(--text-main)' }}>Performans Özeti</span>}
+                                style={{ background: 'var(--container-bg)' }}
+                            >
+                                <div style={{ marginBottom: 20 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <Text style={{ color: 'var(--text-secondary)' }}>Dönüşüm Oranı</Text>
+                                        <Text strong style={{ color: 'var(--text-main)' }}>{conversionRate}%</Text>
+                                    </div>
+                                    <Progress
+                                        percent={conversionRate}
+                                        strokeColor="#00b96b"
+                                        trailColor="rgba(255,255,255,0.06)"
+                                        showInfo={false}
+                                    />
+                                </div>
+                                <div style={{ marginBottom: 20 }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                                        <Text style={{ color: 'var(--text-secondary)' }}>Kayıp Oranı</Text>
+                                        <Text strong style={{ color: 'var(--text-main)' }}>{lossRate}%</Text>
+                                    </div>
+                                    <Progress
+                                        percent={lossRate}
+                                        strokeColor="#ff4d4f"
+                                        trailColor="rgba(255,255,255,0.06)"
+                                        showInfo={false}
+                                    />
+                                </div>
+                                <Row gutter={[16, 16]}>
+                                    <Col span={12}>
+                                        <Statistic
+                                            title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Kazanılan</Text>}
+                                            value={stats.wonDeals}
+                                            valueStyle={{ fontSize: 20, color: '#00b96b' }}
+                                        />
+                                    </Col>
+                                    <Col span={12}>
+                                        <Statistic
+                                            title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Kaybedilen</Text>}
+                                            value={stats.lostDeals}
+                                            valueStyle={{ fontSize: 20, color: '#ff4d4f' }}
+                                        />
+                                    </Col>
+                                </Row>
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    {/* ── Görevler ──────────────────────────────────────────── */}
+                    <Card
+                        variant="borderless"
+                        style={{ background: 'var(--container-bg)' }}
+                        title={
+                            <Space>
+                                <CheckCircleOutlined style={{ color: '#faad14' }} />
+                                <span style={{ color: 'var(--text-main)' }}>
+                                    Bekleyen Görevler
+                                </span>
+                                {stats.pendingTasks > 0 && (
+                                    <Badge count={stats.pendingTasks} style={{ backgroundColor: '#ff4d4f' }} />
+                                )}
+                            </Space>
+                        }
+                    >
+                        {tasksLoading ? (
+                            <div style={{ textAlign: 'center', padding: 32 }}>
+                                <Spin size="small" />
                             </div>
-                            <Progress percent={98} strokeColor="#52c41a" showInfo={false} />
-                        </div>
-                        <div style={{ marginBottom: 24 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                                <Text>Otomasyon Başarısı</Text>
-                                <Text strong>84%</Text>
-                            </div>
-                            <Progress percent={84} strokeColor="var(--primary)" showInfo={false} />
-                        </div>
-
-                        <Row gutter={[16, 16]}>
-                            <Col span={12}>
-                                <Statistic title="Top. Mesaj" value={stats.totalMessages} valueStyle={{ fontSize: 20 }} />
-                            </Col>
-                            <Col span={12}>
-                                <Statistic title="Yanıt Hızı" value={stats.avgResponseTime} valueStyle={{ fontSize: 20 }} />
-                            </Col>
-                        </Row>
+                        ) : tasks.length === 0 ? (
+                            <Empty
+                                description={<Text style={{ color: 'var(--text-secondary)' }}>Tüm görevler tamamlandı 🎉</Text>}
+                            />
+                        ) : (
+                            <List
+                                dataSource={tasks}
+                                renderItem={(task) => {
+                                    const isOverdue = task.due_date && dayjs(task.due_date).isBefore(dayjs());
+                                    return (
+                                        <List.Item
+                                            style={{
+                                                padding: '12px 0',
+                                                borderBottom: '1px solid var(--border-color)',
+                                            }}
+                                            actions={[
+                                                <Tooltip title="Tamamlandı olarak işaretle" key="complete">
+                                                    <Button
+                                                        type="text"
+                                                        icon={<CheckCircleOutlined />}
+                                                        onClick={() => completeTask(task.id)}
+                                                        style={{ color: '#52c41a' }}
+                                                        size="small"
+                                                    >
+                                                        Tamamla
+                                                    </Button>
+                                                </Tooltip>,
+                                            ]}
+                                        >
+                                            <List.Item.Meta
+                                                title={
+                                                    <Space>
+                                                        <Text style={{ color: 'var(--text-main)' }}>{task.title}</Text>
+                                                        {isOverdue && (
+                                                            <Tag color="red" icon={<WarningOutlined />}>Gecikmiş</Tag>
+                                                        )}
+                                                        {task.contact_name && (
+                                                            <Tag color="blue" icon={<UserOutlined />} style={{ fontSize: 11 }}>
+                                                                {task.contact_name}
+                                                            </Tag>
+                                                        )}
+                                                    </Space>
+                                                }
+                                                description={
+                                                    <Space direction="vertical" size={0}>
+                                                        {task.description && (
+                                                            <Text style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                                                                {task.description}
+                                                            </Text>
+                                                        )}
+                                                        {task.due_date && (
+                                                            <Text style={{
+                                                                fontSize: 11,
+                                                                color: isOverdue ? '#ff4d4f' : 'var(--text-secondary)',
+                                                            }}>
+                                                                <CalendarOutlined style={{ marginRight: 4 }} />
+                                                                {dayjs(task.due_date).format('D MMMM YYYY, HH:mm')}
+                                                            </Text>
+                                                        )}
+                                                    </Space>
+                                                }
+                                            />
+                                        </List.Item>
+                                    );
+                                }}
+                            />
+                        )}
                     </Card>
-
-                    <Card variant="borderless" style={{ marginTop: 24, background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)' }}>
-                        <Title level={4} style={{ color: 'white', margin: 0 }}>Günün Hedefi</Title>
-                        <div style={{ marginTop: 12 }}>
-                            <Progress type="circle" percent={75} strokeColor="#fbbf24" style={{ display: 'block', margin: '0 auto' }} />
-                        </div>
-                        <div style={{ textAlign: 'center', marginTop: 16 }}>
-                            <Text style={{ color: '#c7d2fe' }}>12/16 Satış Tamamlandı</Text>
-                        </div>
-                    </Card>
-                </Col>
-            </Row>
+                </>
+            )}
         </div>
     );
 }
