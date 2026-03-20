@@ -37,6 +37,9 @@ interface DashboardStats {
     wonDeals: number;
     lostDeals: number;
     todayLeads: number;
+    weekLeads: number;
+    hotLeads: number;
+    conversionRate: number;
     pendingTasks: number;
 }
 
@@ -94,6 +97,9 @@ export default function DashboardPage() {
         wonDeals: 0,
         lostDeals: 0,
         todayLeads: 0,
+        weekLeads: 0,
+        hotLeads: 0,
+        conversionRate: 0,
         pendingTasks: 0,
     });
     const [pipeline, setPipeline] = useState<PipelineStage[]>([]);
@@ -105,6 +111,7 @@ export default function DashboardPage() {
         setLoading(true);
         try {
             const todayStart = dayjs().startOf('day').toISOString();
+            const weekStart = dayjs().subtract(7, 'day').toISOString();
 
             const [
                 { count: totalContacts },
@@ -113,6 +120,8 @@ export default function DashboardPage() {
                 { count: wonDeals },
                 { count: lostDeals },
                 { count: todayLeads },
+                { count: weekLeads },
+                { count: hotLeads },
                 { data: pipelineRaw },
                 { data: convRaw },
             ] = await Promise.all([
@@ -122,6 +131,8 @@ export default function DashboardPage() {
                 supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('stage', 'won'),
                 supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('stage', 'lost'),
                 supabase.from('contacts').select('*', { count: 'exact', head: true }).gte('created_at', todayStart),
+                supabase.from('contacts').select('*', { count: 'exact', head: true }).gte('created_at', weekStart),
+                supabase.from('contacts').select('*', { count: 'exact', head: true }).eq('lead_temperature', 'HOT'),
                 supabase.from('contacts').select('stage').neq('stage', null),
                 supabase.from('conversations')
                     .select('id, last_message_at, unread_count, contacts(name)')
@@ -150,13 +161,20 @@ export default function DashboardPage() {
                 .select('*', { count: 'exact', head: true })
                 .eq('is_completed', false);
 
+            const total = totalContacts ?? 0;
+            const won = wonDeals ?? 0;
+            const convRate = total > 0 ? Math.round((won / total) * 100) : 0;
+
             setStats({
-                totalContacts: totalContacts ?? 0,
+                totalContacts: total,
                 activeConversations: activeConversations ?? 0,
                 totalMessages: totalMessages ?? 0,
-                wonDeals: wonDeals ?? 0,
+                wonDeals: won,
                 lostDeals: lostDeals ?? 0,
                 todayLeads: todayLeads ?? 0,
+                weekLeads: weekLeads ?? 0,
+                hotLeads: hotLeads ?? 0,
+                conversionRate: convRate,
                 pendingTasks: pendingTasks ?? 0,
             });
             setPipeline(pipelineData);
@@ -217,9 +235,7 @@ export default function DashboardPage() {
     if (!mounted) return null;
 
     const totalPipelineContacts = pipeline.reduce((acc, p) => acc + p.count, 0);
-    const conversionRate = totalPipelineContacts > 0
-        ? Math.round((stats.wonDeals / totalPipelineContacts) * 100)
-        : 0;
+    const conversionRate = stats.conversionRate;
     const lossRate = totalPipelineContacts > 0
         ? Math.round((stats.lostDeals / totalPipelineContacts) * 100)
         : 0;
@@ -251,7 +267,7 @@ export default function DashboardPage() {
                         <Col xs={12} sm={8} lg={4}>
                             <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
                                 <Statistic
-                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Toplam Kişi</Text>}
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Toplam Lead</Text>}
                                     value={stats.totalContacts}
                                     prefix={<TeamOutlined style={{ color: '#1890ff' }} />}
                                     valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
@@ -261,9 +277,9 @@ export default function DashboardPage() {
                         <Col xs={12} sm={8} lg={4}>
                             <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
                                 <Statistic
-                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Aktif Konuşma</Text>}
-                                    value={stats.activeConversations}
-                                    prefix={<MessageOutlined style={{ color: '#52c41a' }} />}
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Bu Hafta Yeni</Text>}
+                                    value={stats.weekLeads}
+                                    prefix={<CalendarOutlined style={{ color: '#52c41a' }} />}
                                     valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
                                 />
                             </Card>
@@ -271,10 +287,10 @@ export default function DashboardPage() {
                         <Col xs={12} sm={8} lg={4}>
                             <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
                                 <Statistic
-                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Toplam Mesaj</Text>}
-                                    value={stats.totalMessages}
-                                    prefix={<MessageOutlined style={{ color: '#722ed1' }} />}
-                                    valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Sıcak Lead</Text>}
+                                    value={stats.hotLeads}
+                                    prefix={<FireOutlined style={{ color: '#ff4d4f' }} />}
+                                    valueStyle={{ color: stats.hotLeads > 0 ? '#ff4d4f' : 'var(--text-main)', fontSize: 22 }}
                                 />
                             </Card>
                         </Col>
@@ -291,10 +307,11 @@ export default function DashboardPage() {
                         <Col xs={12} sm={8} lg={4}>
                             <Card variant="borderless" style={{ background: 'var(--container-bg)', textAlign: 'center' }}>
                                 <Statistic
-                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Bugün Gelen</Text>}
-                                    value={stats.todayLeads}
-                                    prefix={<UserOutlined style={{ color: '#faad14' }} />}
-                                    valueStyle={{ color: 'var(--text-main)', fontSize: 22 }}
+                                    title={<Text style={{ color: 'var(--text-secondary)', fontSize: 12 }}>Dönüşüm Oranı</Text>}
+                                    value={stats.conversionRate}
+                                    suffix="%"
+                                    prefix={<ThunderboltOutlined style={{ color: '#722ed1' }} />}
+                                    valueStyle={{ color: stats.conversionRate >= 20 ? '#00b96b' : 'var(--text-main)', fontSize: 22 }}
                                 />
                             </Card>
                         </Col>
