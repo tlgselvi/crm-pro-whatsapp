@@ -73,7 +73,7 @@ export default function BroadcastPage() {
             for (const contact of selectedRows) {
                 // In Phase 6, we would call sendWhatsAppMessage here.
                 // For demo/safety, we log to console.
-                console.log(`[Broadcast] Sending to ${contact.phone}: ${values.content}`);
+                // WhatsApp gönderimi Phase 6'da eklenecek
 
                 // Track message in DB
                 await supabase.from('messages').insert({
