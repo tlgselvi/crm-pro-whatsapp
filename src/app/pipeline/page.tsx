@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Card, Avatar, Tag, Typography, Spin, Empty, Badge } from 'antd';
-import { UserOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
+import { UserOutlined, PhoneOutlined, MailOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Popconfirm, message as antMessage } from 'antd';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { supabase, type Contact } from '@/lib/supabase';
 import dayjs from 'dayjs';
@@ -77,6 +78,38 @@ export default function PipelinePage() {
             console.error('Error fetching contacts:', error);
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function deleteContact(contactId: string, stageId: string) {
+        try {
+            // Önce ilişkili mesajları ve konuşmaları sil
+            const { data: convs } = await supabase
+                .from('conversations')
+                .select('id')
+                .eq('contact_id', contactId);
+
+            if (convs && convs.length > 0) {
+                const convIds = convs.map(c => c.id);
+                await supabase.from('messages').delete().in('conversation_id', convIds);
+                await supabase.from('conversations').delete().eq('contact_id', contactId);
+            }
+
+            const { error } = await supabase
+                .from('contacts')
+                .delete()
+                .eq('id', contactId);
+
+            if (error) throw error;
+
+            // UI güncelle
+            const newContacts = { ...contacts };
+            newContacts[stageId] = newContacts[stageId].filter(c => c.id !== contactId);
+            setContacts(newContacts);
+            antMessage.success('Müşteri silindi');
+        } catch (error) {
+            console.error('Silme hatası:', error);
+            antMessage.error('Silme başarısız');
         }
     }
 
@@ -200,9 +233,27 @@ export default function PipelinePage() {
                                                                     }}
                                                                 />
                                                                 <div style={{ flex: 1 }}>
-                                                                    <Text strong style={{ display: 'block', fontSize: 14, color: 'var(--text-main)' }}>
-                                                                        {contact.name}
-                                                                    </Text>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                        <Text strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
+                                                                            {contact.name}
+                                                                        </Text>
+                                                                        <Popconfirm
+                                                                            title="Müşteriyi sil"
+                                                                            description="Bu müşteri ve tüm konuşma geçmişi silinecek."
+                                                                            onConfirm={(e) => { e?.stopPropagation(); deleteContact(contact.id, stage.id); }}
+                                                                            onCancel={(e) => e?.stopPropagation()}
+                                                                            okText="Sil"
+                                                                            cancelText="İptal"
+                                                                            okButtonProps={{ danger: true }}
+                                                                        >
+                                                                            <DeleteOutlined
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                style={{ color: '#64748b', fontSize: 13, cursor: 'pointer', padding: 4 }}
+                                                                                onMouseEnter={(e) => (e.currentTarget.style.color = '#ff4d4f')}
+                                                                                onMouseLeave={(e) => (e.currentTarget.style.color = '#64748b')}
+                                                                            />
+                                                                        </Popconfirm>
+                                                                    </div>
                                                                     <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
                                                                         <PhoneOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                         {contact.phone}
