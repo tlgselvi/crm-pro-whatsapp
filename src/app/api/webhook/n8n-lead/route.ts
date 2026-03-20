@@ -43,6 +43,7 @@ export async function POST(request: NextRequest) {
       leadTemp,
       pipelineStage,
       firstMessage,
+      botAnswer,
       source,
       waId,
       notes,
@@ -146,7 +147,7 @@ export async function POST(request: NextRequest) {
       conversationId = newConv.id;
     }
 
-    // İlk mesajı kaydet
+    // Müşteri mesajını kaydet
     if (firstMessage) {
       await supabase.from('messages').insert({
         conversation_id: conversationId,
@@ -154,6 +155,18 @@ export async function POST(request: NextRequest) {
         content: firstMessage,
         timestamp: new Date().toISOString(),
         is_read: false,
+        platform: 'whatsapp',
+      });
+    }
+
+    // Bot cevabını kaydet
+    if (botAnswer) {
+      await supabase.from('messages').insert({
+        conversation_id: conversationId,
+        sender: 'agent',
+        content: botAnswer,
+        timestamp: new Date(Date.now() + 1000).toISOString(),
+        is_read: true,
         platform: 'whatsapp',
       });
     }
