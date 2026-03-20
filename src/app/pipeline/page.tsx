@@ -3,12 +3,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
     Card, Avatar, Tag, Typography, Spin, Empty, Badge,
-    Drawer, Descriptions, Select, Input, Popconfirm, Divider, Button, Tooltip
+    Drawer, Descriptions, Select, Input, Popconfirm, Divider, Button, Tooltip, Space
 } from 'antd';
 import {
     UserOutlined, PhoneOutlined, MailOutlined, DeleteOutlined,
     FireOutlined, ThunderboltOutlined, ClockCircleOutlined,
-    MessageOutlined, CalendarOutlined, TeamOutlined
+    MessageOutlined, CalendarOutlined, TeamOutlined,
+    CopyOutlined, WhatsAppOutlined, SearchOutlined
 } from '@ant-design/icons';
 import { message as antMessage } from 'antd';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -75,6 +76,33 @@ export default function PipelinePage() {
         notes: '',
         savingNotes: false,
     });
+
+    // ── Arama & Filtre ─────────────────────────────────────────────────────────
+    const [searchText, setSearchText] = useState('');
+    const [filterTemp, setFilterTemp] = useState<string | null>(null);
+    const [filterStage, setFilterStage] = useState<string | null>(null);
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    function handleSearchChange(value: string) {
+        setSearchText(value);
+        if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+        searchTimerRef.current = setTimeout(() => setDebouncedSearch(value), 300);
+    }
+
+    function getFilteredContacts(stageId: string): Contact[] {
+        const list = contacts[stageId] ?? [];
+        return list.filter(c => {
+            const q = debouncedSearch.toLowerCase();
+            const matchSearch = !q ||
+                c.name?.toLowerCase().includes(q) ||
+                c.phone?.toLowerCase().includes(q) ||
+                (c.first_message ?? '').toLowerCase().includes(q);
+            const matchTemp = !filterTemp || c.lead_temperature === filterTemp;
+            const matchStage = !filterStage || c.stage === filterStage;
+            return matchSearch && matchTemp && matchStage;
+        });
+    }
 
     // Drag guard — prevents accidental drawer opens while dragging
     const isDraggingRef = useRef(false);
@@ -334,6 +362,24 @@ export default function PipelinePage() {
         }
     }
 
+    function formatPhoneForWhatsApp(phone?: string): string {
+        if (!phone) return '';
+        // Sadece rakamları al, başında + veya 00 varsa koru
+        const digits = phone.replace(/\D/g, '');
+        // Türkiye numarası: 10 haneli → 90 ekle, 11+ haneli → olduğu gibi
+        if (digits.startsWith('90')) return digits;
+        if (digits.startsWith('0')) return '90' + digits.slice(1);
+        if (digits.length === 10) return '90' + digits;
+        return digits;
+    }
+
+    function copyPhone(phone?: string) {
+        if (!phone) return;
+        navigator.clipboard.writeText(phone)
+            .then(() => antMessage.success('Telefon kopyalandı'))
+            .catch(() => antMessage.error('Kopyalama başarısız'));
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────────
 
     function temperatureTag(temp?: string) {
@@ -366,6 +412,69 @@ export default function PipelinePage() {
         <div>
             <Title level={2} style={{ marginBottom: 24 }}>Satış Hunisi</Title>
 
+            {/* ── Arama & Filtre Toolbar ─────────────────────────────────── */}
+            <div style={{
+                display: 'flex',
+                gap: 12,
+                marginBottom: 20,
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                background: 'rgba(255,255,255,0.02)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 12,
+                padding: '12px 16px',
+            }}>
+                <Input
+                    placeholder="İsim, telefon veya ilk mesaj ile ara…"
+                    prefix={<SearchOutlined style={{ color: 'var(--text-secondary)' }} />}
+                    value={searchText}
+                    onChange={e => handleSearchChange(e.target.value)}
+                    allowClear
+                    onClear={() => { setSearchText(''); setDebouncedSearch(''); }}
+                    style={{
+                        flex: '1 1 240px',
+                        background: '#28292a',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: 8,
+                        color: 'var(--text-main)',
+                    }}
+                />
+                <Select
+                    placeholder="🌡️ Sıcaklık"
+                    allowClear
+                    value={filterTemp}
+                    onChange={val => setFilterTemp(val ?? null)}
+                    style={{ minWidth: 140 }}
+                    options={[
+                        { value: 'HOT', label: '🔥 Sıcak' },
+                        { value: 'WARM', label: '⚡ Ilık' },
+                        { value: 'COLD', label: '❄️ Soğuk' },
+                    ]}
+                />
+                <Select
+                    placeholder="📊 Aşama"
+                    allowClear
+                    value={filterStage}
+                    onChange={val => setFilterStage(val ?? null)}
+                    style={{ minWidth: 180 }}
+                    options={STAGES.map(s => ({ value: s.id, label: s.name }))}
+                />
+                {(searchText || filterTemp || filterStage) && (
+                    <Button
+                        size="small"
+                        onClick={() => {
+                            setSearchText('');
+                            setDebouncedSearch('');
+                            setFilterTemp(null);
+                            setFilterStage(null);
+                        }}
+                        style={{ color: 'var(--text-secondary)', borderColor: 'var(--border-color)', borderRadius: 8 }}
+                    >
+                        Filtreyi Temizle
+                    </Button>
+                )}
+            </div>
+
             <DragDropContext onDragStart={handleDragStart} onDragEnd={onDragEnd}>
                 <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
                     {STAGES.map((stage) => (
@@ -387,7 +496,7 @@ export default function PipelinePage() {
                                         {stage.name}
                                     </Text>
                                     <Badge
-                                        count={contacts[stage.id]?.length || 0}
+                                        count={getFilteredContacts(stage.id).length}
                                         showZero
                                         color={stage.color}
                                         style={{ backgroundColor: stage.color, boxShadow: `0 0 10px ${stage.color}44` }}
@@ -409,14 +518,14 @@ export default function PipelinePage() {
                                             padding: '4px'
                                         }}
                                     >
-                                        {contacts[stage.id]?.length === 0 ? (
+                                        {getFilteredContacts(stage.id).length === 0 ? (
                                             <Empty
                                                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                                                 description={<Text type="secondary">Boş</Text>}
                                                 style={{ padding: '60px 0' }}
                                             />
                                         ) : (
-                                            contacts[stage.id]?.map((contact, index) => (
+                                            getFilteredContacts(stage.id).map((contact, index) => (
                                                 <Draggable key={contact.id} draggableId={contact.id} index={index}>
                                                     {(provided, snapshot) => (
                                                         <Card
@@ -722,6 +831,7 @@ export default function PipelinePage() {
                                     <Select
                                         value={drawer.contact.stage}
                                         onChange={changeStage}
+                                        onSelect={changeStage}
                                         style={{ width: '100%' }}
                                         popupMatchSelectWidth={false}
                                         options={STAGES.map(s => ({ value: s.id, label: s.name }))}
@@ -749,6 +859,34 @@ export default function PipelinePage() {
                                             { value: 'COLD', label: '❄️ Soğuk' },
                                         ]}
                                     />
+                                </div>
+
+                                <Divider style={{ margin: '4px 0', borderColor: 'var(--border-color)' }} />
+
+                                {/* WhatsApp & Copy */}
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                    <Button
+                                        icon={<WhatsAppOutlined />}
+                                        href={`https://wa.me/${formatPhoneForWhatsApp(drawer.contact.phone)}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            flex: 1,
+                                            borderRadius: 8,
+                                            background: '#25D366',
+                                            borderColor: '#25D366',
+                                            color: '#fff',
+                                        }}
+                                    >
+                                        WhatsApp&apos;ta Aç
+                                    </Button>
+                                    <Button
+                                        icon={<CopyOutlined />}
+                                        onClick={() => copyPhone(drawer.contact?.phone)}
+                                        style={{ flex: 1, borderRadius: 8 }}
+                                    >
+                                        Kopyala
+                                    </Button>
                                 </div>
 
                                 <Divider style={{ margin: '4px 0', borderColor: 'var(--border-color)' }} />
