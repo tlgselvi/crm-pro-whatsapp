@@ -1,14 +1,27 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Card, Avatar, Tag, Typography, Spin, Empty, Badge } from 'antd';
-import { UserOutlined, PhoneOutlined, MailOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Popconfirm, message as antMessage } from 'antd';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import {
+    Card, Avatar, Tag, Typography, Spin, Empty, Badge,
+    Drawer, Descriptions, Select, Input, Popconfirm, Divider, Button, Tooltip
+} from 'antd';
+import {
+    UserOutlined, PhoneOutlined, MailOutlined, DeleteOutlined,
+    FireOutlined, ThunderboltOutlined, ClockCircleOutlined,
+    MessageOutlined, CalendarOutlined, TeamOutlined
+} from '@ant-design/icons';
+import { message as antMessage } from 'antd';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { supabase, type Contact } from '@/lib/supabase';
+import { supabase, type Contact, type Message, type Conversation } from '@/lib/supabase';
 import dayjs from 'dayjs';
+import 'dayjs/locale/tr';
+
+dayjs.locale('tr');
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const STAGES = [
     { id: 'new', name: 'Yeni Gelenler', color: '#1890ff' },
@@ -20,36 +33,66 @@ const STAGES = [
     { id: 'lost', name: 'Kaybedildi', color: '#ff4d4f' },
 ];
 
+const TEMP_CONFIG: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
+    HOT: { color: '#ff4d4f', icon: <FireOutlined />, label: 'Sıcak' },
+    WARM: { color: '#faad14', icon: <ThunderboltOutlined />, label: 'Ilık' },
+    COLD: { color: '#1890ff', icon: <ClockCircleOutlined />, label: 'Soğuk' },
+};
+
+const SEGMENT_LABELS: Record<string, string> = {
+    YENI_HAVUZ: 'Yeni Havuz',
+    BAKIM: 'Bakım',
+    MALZEME: 'Malzeme',
+    TADILAT: 'Tadilat',
+    SAUNA_SPA: 'Sauna / Spa',
+};
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
 interface PipelineData {
     [key: string]: Contact[];
 }
 
+interface DrawerState {
+    open: boolean;
+    contact: Contact | null;
+    messages: Message[];
+    loadingMessages: boolean;
+    notes: string;
+    savingNotes: boolean;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function PipelinePage() {
     const [contacts, setContacts] = useState<PipelineData>({});
     const [loading, setLoading] = useState(true);
+    const [drawer, setDrawer] = useState<DrawerState>({
+        open: false,
+        contact: null,
+        messages: [],
+        loadingMessages: false,
+        notes: '',
+        savingNotes: false,
+    });
+
+    // Drag guard — prevents accidental drawer opens while dragging
+    const isDraggingRef = useRef(false);
+    const chatBottomRef = useRef<HTMLDivElement>(null);
+
+    // ── Data fetching ──────────────────────────────────────────────────────────
 
     useEffect(() => {
         fetchContacts();
 
-        // Real-time subscription
         const channel = supabase
             .channel('pipeline_contacts')
-            .on(
-                'postgres_changes',
-                {
-                    event: '*',
-                    schema: 'public',
-                    table: 'contacts',
-                },
-                () => {
-                    fetchContacts();
-                }
-            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'contacts' }, () => {
+                fetchContacts();
+            })
             .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, []);
 
     async function fetchContacts() {
@@ -61,29 +104,169 @@ export default function PipelinePage() {
 
             if (error) throw error;
 
-            // Group contacts by stage
             const grouped: PipelineData = {};
-            STAGES.forEach((stage) => {
-                grouped[stage.id] = [];
-            });
-
-            data?.forEach((contact) => {
-                if (grouped[contact.stage]) {
-                    grouped[contact.stage].push(contact);
-                }
-            });
-
+            STAGES.forEach((s) => { grouped[s.id] = []; });
+            data?.forEach((c) => { if (grouped[c.stage]) grouped[c.stage].push(c); });
             setContacts(grouped);
-        } catch (error) {
-            console.error('Error fetching contacts:', error);
+        } catch (err) {
+            console.error('Kişiler alınamadı:', err);
         } finally {
             setLoading(false);
         }
     }
 
+    async function fetchMessages(contact: Contact) {
+        setDrawer(prev => ({ ...prev, loadingMessages: true, messages: [] }));
+        try {
+            // Active conversation for this contact
+            const { data: convData } = await supabase
+                .from('conversations')
+                .select('id')
+                .eq('contact_id', contact.id)
+                .eq('status', 'active')
+                .limit(1)
+                .single();
+
+            if (!convData) {
+                setDrawer(prev => ({ ...prev, loadingMessages: false }));
+                return;
+            }
+
+            const { data: msgData, error } = await supabase
+                .from('messages')
+                .select('*')
+                .eq('conversation_id', convData.id)
+                .order('timestamp', { ascending: true });
+
+            if (error) throw error;
+            setDrawer(prev => ({ ...prev, messages: msgData ?? [], loadingMessages: false }));
+        } catch (err) {
+            console.error('Mesajlar alınamadı:', err);
+            setDrawer(prev => ({ ...prev, loadingMessages: false }));
+        }
+    }
+
+    // ── Drawer open/close ──────────────────────────────────────────────────────
+
+    function openDrawer(contact: Contact) {
+        if (isDraggingRef.current) return;
+        setDrawer({
+            open: true,
+            contact,
+            messages: [],
+            loadingMessages: true,
+            notes: contact.notes ?? '',
+            savingNotes: false,
+        });
+        fetchMessages(contact);
+    }
+
+    function closeDrawer() {
+        setDrawer(prev => ({ ...prev, open: false, contact: null }));
+    }
+
+    // Scroll chat to bottom when messages arrive
+    useEffect(() => {
+        if (drawer.messages.length > 0) {
+            setTimeout(() => chatBottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+        }
+    }, [drawer.messages]);
+
+    // ── Notes save ─────────────────────────────────────────────────────────────
+
+    async function saveNotes() {
+        if (!drawer.contact) return;
+        setDrawer(prev => ({ ...prev, savingNotes: true }));
+        try {
+            const { error } = await supabase
+                .from('contacts')
+                .update({ notes: drawer.notes, updated_at: new Date().toISOString() })
+                .eq('id', drawer.contact.id);
+
+            if (error) throw error;
+
+            // Reflect in pipeline state
+            setContacts(prev => {
+                const updated = { ...prev };
+                const stage = drawer.contact!.stage;
+                updated[stage] = updated[stage].map(c =>
+                    c.id === drawer.contact!.id ? { ...c, notes: drawer.notes } : c
+                );
+                return updated;
+            });
+            antMessage.success('Not kaydedildi');
+        } catch (err) {
+            console.error('Not kaydedilemedi:', err);
+            antMessage.error('Not kaydedilemedi');
+        } finally {
+            setDrawer(prev => ({ ...prev, savingNotes: false }));
+        }
+    }
+
+    // ── Quick actions ──────────────────────────────────────────────────────────
+
+    async function changeStage(newStage: string) {
+        if (!drawer.contact) return;
+        const oldStage = drawer.contact.stage;
+        try {
+            const { error } = await supabase
+                .from('contacts')
+                .update({ stage: newStage, updated_at: new Date().toISOString() })
+                .eq('id', drawer.contact.id);
+
+            if (error) throw error;
+
+            setContacts(prev => {
+                const updated = { ...prev };
+                updated[oldStage] = updated[oldStage].filter(c => c.id !== drawer.contact!.id);
+                const movedContact = { ...drawer.contact!, stage: newStage };
+                updated[newStage] = [movedContact, ...updated[newStage]];
+                return updated;
+            });
+            setDrawer(prev => ({
+                ...prev,
+                contact: prev.contact ? { ...prev.contact, stage: newStage } : null
+            }));
+            antMessage.success('Aşama güncellendi');
+        } catch (err) {
+            console.error(err);
+            antMessage.error('Güncelleme başarısız');
+        }
+    }
+
+    async function changeTemperature(temp: 'HOT' | 'WARM' | 'COLD') {
+        if (!drawer.contact) return;
+        try {
+            const { error } = await supabase
+                .from('contacts')
+                .update({ lead_temperature: temp, updated_at: new Date().toISOString() })
+                .eq('id', drawer.contact.id);
+
+            if (error) throw error;
+
+            setContacts(prev => {
+                const updated = { ...prev };
+                const stage = drawer.contact!.stage;
+                updated[stage] = updated[stage].map(c =>
+                    c.id === drawer.contact!.id ? { ...c, lead_temperature: temp } : c
+                );
+                return updated;
+            });
+            setDrawer(prev => ({
+                ...prev,
+                contact: prev.contact ? { ...prev.contact, lead_temperature: temp } : null
+            }));
+            antMessage.success('Sıcaklık güncellendi');
+        } catch (err) {
+            console.error(err);
+            antMessage.error('Güncelleme başarısız');
+        }
+    }
+
+    // ── Delete (reused from card, also callable from drawer) ──────────────────
+
     async function deleteContact(contactId: string, stageId: string) {
         try {
-            // Önce ilişkili mesajları ve konuşmaları sil
             const { data: convs } = await supabase
                 .from('conversations')
                 .select('id')
@@ -102,28 +285,35 @@ export default function PipelinePage() {
 
             if (error) throw error;
 
-            // UI güncelle
-            const newContacts = { ...contacts };
-            newContacts[stageId] = newContacts[stageId].filter(c => c.id !== contactId);
-            setContacts(newContacts);
+            setContacts(prev => {
+                const updated = { ...prev };
+                updated[stageId] = updated[stageId].filter(c => c.id !== contactId);
+                return updated;
+            });
+
+            if (drawer.contact?.id === contactId) closeDrawer();
             antMessage.success('Müşteri silindi');
-        } catch (error) {
-            console.error('Silme hatası:', error);
+        } catch (err) {
+            console.error('Silme hatası:', err);
             antMessage.error('Silme başarısız');
         }
     }
 
-    async function onDragEnd(result: DropResult) {
-        const { destination, source, draggableId } = result;
+    // ── Drag handlers ──────────────────────────────────────────────────────────
 
+    function handleDragStart() {
+        isDraggingRef.current = true;
+    }
+
+    async function onDragEnd(result: DropResult) {
+        // Small delay before clearing the flag so onClick doesn't fire
+        setTimeout(() => { isDraggingRef.current = false; }, 150);
+
+        const { destination, source, draggableId } = result;
         if (!destination) return;
-        if (destination.droppableId === source.droppableId && destination.index === source.index) {
-            return;
-        }
+        if (destination.droppableId === source.droppableId && destination.index === source.index) return;
 
         const newStage = destination.droppableId;
-
-        // Update Supabase
         try {
             const { error } = await supabase
                 .from('contacts')
@@ -132,16 +322,35 @@ export default function PipelinePage() {
 
             if (error) throw error;
 
-            // Optimistically update UI
-            const newContacts = { ...contacts };
-            const [movedContact] = newContacts[source.droppableId].splice(source.index, 1);
-            movedContact.stage = newStage;
-            newContacts[destination.droppableId].splice(destination.index, 0, movedContact);
-            setContacts(newContacts);
-        } catch (error) {
-            console.error('Error updating contact stage:', error);
+            setContacts(prev => {
+                const updated = { ...prev };
+                const [moved] = updated[source.droppableId].splice(source.index, 1);
+                moved.stage = newStage;
+                updated[destination.droppableId].splice(destination.index, 0, moved);
+                return updated;
+            });
+        } catch (err) {
+            console.error('Sürükleme hatası:', err);
         }
     }
+
+    // ── Helpers ────────────────────────────────────────────────────────────────
+
+    function temperatureTag(temp?: string) {
+        if (!temp || !TEMP_CONFIG[temp]) return <Tag color="default">—</Tag>;
+        const cfg = TEMP_CONFIG[temp];
+        return (
+            <Tag color={cfg.color} icon={cfg.icon}>
+                {cfg.label}
+            </Tag>
+        );
+    }
+
+    function stageLabel(stageId: string) {
+        return STAGES.find(s => s.id === stageId)?.name ?? stageId;
+    }
+
+    // ── Loading ────────────────────────────────────────────────────────────────
 
     if (loading) {
         return (
@@ -151,11 +360,13 @@ export default function PipelinePage() {
         );
     }
 
+    // ── Render ─────────────────────────────────────────────────────────────────
+
     return (
         <div>
             <Title level={2} style={{ marginBottom: 24 }}>Satış Hunisi</Title>
 
-            <DragDropContext onDragEnd={onDragEnd}>
+            <DragDropContext onDragStart={handleDragStart} onDragEnd={onDragEnd}>
                 <div style={{ display: 'flex', gap: 16, overflowX: 'auto', paddingBottom: 16 }}>
                     {STAGES.map((stage) => (
                         <div
@@ -175,7 +386,6 @@ export default function PipelinePage() {
                                     <Text strong style={{ fontSize: 15, color: 'var(--text-main)' }}>
                                         {stage.name}
                                     </Text>
-
                                     <Badge
                                         count={contacts[stage.id]?.length || 0}
                                         showZero
@@ -217,10 +427,12 @@ export default function PipelinePage() {
                                                             variant="borderless"
                                                             style={{
                                                                 marginBottom: 16,
-                                                                cursor: 'grab',
+                                                                cursor: snapshot.isDragging ? 'grabbing' : 'pointer',
+                                                                opacity: snapshot.isDragging ? 0.85 : 1,
                                                                 ...provided.draggableProps.style,
                                                             }}
                                                             size="small"
+                                                            onClick={() => !snapshot.isDragging && openDrawer(contact)}
                                                         >
                                                             <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
                                                                 <Avatar
@@ -229,10 +441,11 @@ export default function PipelinePage() {
                                                                     style={{
                                                                         backgroundColor: '#28292a',
                                                                         border: '1px solid var(--border-color)',
-                                                                        color: 'var(--text-secondary)'
+                                                                        color: 'var(--text-secondary)',
+                                                                        flexShrink: 0,
                                                                     }}
                                                                 />
-                                                                <div style={{ flex: 1 }}>
+                                                                <div style={{ flex: 1, minWidth: 0 }}>
                                                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                         <Text strong style={{ fontSize: 14, color: 'var(--text-main)' }}>
                                                                             {contact.name}
@@ -258,14 +471,19 @@ export default function PipelinePage() {
                                                                         <PhoneOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                         {contact.phone}
                                                                     </div>
-
                                                                     {contact.email && (
                                                                         <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
                                                                             <MailOutlined style={{ marginRight: 6, fontSize: 10 }} />
                                                                             {contact.email}
                                                                         </div>
                                                                     )}
-                                                                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                                                                    {/* Lead temperature mini-badge */}
+                                                                    {contact.lead_temperature && (
+                                                                        <div style={{ marginTop: 8 }}>
+                                                                            {temperatureTag(contact.lead_temperature)}
+                                                                        </div>
+                                                                    )}
+                                                                    <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 8, display: 'flex', justifyContent: 'flex-end' }}>
                                                                         {dayjs(contact.created_at).format('DD MMM')}
                                                                     </div>
                                                                 </div>
@@ -283,6 +501,324 @@ export default function PipelinePage() {
                     ))}
                 </div>
             </DragDropContext>
+
+            {/* ═══════════════════════════════════════════════════════════════
+                CONTACT DETAIL DRAWER
+            ═══════════════════════════════════════════════════════════════ */}
+            <Drawer
+                open={drawer.open}
+                onClose={closeDrawer}
+                width={520}
+                title={null}
+                placement="right"
+                styles={{
+                    body: { padding: 0, background: '#1a1a1a' },
+                    header: { display: 'none' },
+                    wrapper: { boxShadow: '-4px 0 32px rgba(0,0,0,0.6)' },
+                }}
+            >
+                {drawer.contact && (
+                    <div style={{ height: '100%', overflowY: 'auto', color: 'var(--text-main)' }}>
+
+                        {/* ── Contact Header ─────────────────────────────────── */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, #28292a 0%, #1f2024 100%)',
+                            padding: '28px 24px 20px',
+                            borderBottom: '1px solid var(--border-color)',
+                            position: 'relative',
+                        }}>
+                            {/* Close button */}
+                            <button
+                                onClick={closeDrawer}
+                                style={{
+                                    position: 'absolute', top: 16, right: 16,
+                                    background: 'rgba(255,255,255,0.06)', border: 'none',
+                                    borderRadius: 8, width: 32, height: 32,
+                                    cursor: 'pointer', color: 'var(--text-secondary)',
+                                    fontSize: 18, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                            >
+                                ×
+                            </button>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                                <Avatar
+                                    icon={<UserOutlined />}
+                                    size={64}
+                                    style={{
+                                        background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)',
+                                        flexShrink: 0,
+                                        fontSize: 28,
+                                    }}
+                                />
+                                <div>
+                                    <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.2 }}>
+                                        {drawer.contact.name}
+                                    </div>
+                                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 4 }}>
+                                        <PhoneOutlined style={{ marginRight: 6 }} />
+                                        {drawer.contact.phone}
+                                    </div>
+                                    {drawer.contact.email && (
+                                        <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 2 }}>
+                                            <MailOutlined style={{ marginRight: 6 }} />
+                                            {drawer.contact.email}
+                                        </div>
+                                    )}
+                                    <div style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>
+                                        <CalendarOutlined style={{ marginRight: 6 }} />
+                                        {dayjs(drawer.contact.created_at).format('DD MMMM YYYY, HH:mm')} tarihinde eklendi
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Lead Info ─────────────────────────────────────── */}
+                        <div style={{ padding: '20px 24px 0' }}>
+                            <SectionTitle icon={<ThunderboltOutlined />} title="Lead Bilgileri" />
+                            <div style={{
+                                background: '#28292a',
+                                borderRadius: 12,
+                                padding: '16px',
+                                border: '1px solid var(--border-color)',
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: '14px 20px',
+                            }}>
+                                <InfoItem label="Sıcaklık">
+                                    {temperatureTag(drawer.contact.lead_temperature)}
+                                </InfoItem>
+                                <InfoItem label="Lead Skoru">
+                                    <Tag color={
+                                        (drawer.contact.lead_score ?? 0) >= 70 ? 'success' :
+                                        (drawer.contact.lead_score ?? 0) >= 40 ? 'warning' : 'default'
+                                    }>
+                                        {drawer.contact.lead_score ?? '—'} puan
+                                    </Tag>
+                                </InfoItem>
+                                <InfoItem label="Segment">
+                                    <Text style={{ color: 'var(--text-main)', fontSize: 13 }}>
+                                        {drawer.contact.segment ? SEGMENT_LABELS[drawer.contact.segment] ?? drawer.contact.segment : '—'}
+                                    </Text>
+                                </InfoItem>
+                                <InfoItem label="Kaynak">
+                                    <Text style={{ color: 'var(--text-main)', fontSize: 13 }}>
+                                        {drawer.contact.source ?? '—'}
+                                    </Text>
+                                </InfoItem>
+                                <InfoItem label="Pipeline Aşaması" fullWidth>
+                                    <Tag color="blue">{stageLabel(drawer.contact.stage)}</Tag>
+                                </InfoItem>
+                            </div>
+                        </div>
+
+                        {/* ── First Message ─────────────────────────────────── */}
+                        {drawer.contact.first_message && (
+                            <div style={{ padding: '20px 24px 0' }}>
+                                <SectionTitle icon={<MessageOutlined />} title="İlk Mesaj" />
+                                <div style={{
+                                    background: '#28292a',
+                                    borderRadius: 12,
+                                    padding: '14px 16px',
+                                    border: '1px solid var(--border-color)',
+                                    fontSize: 13,
+                                    color: 'var(--text-secondary)',
+                                    lineHeight: 1.6,
+                                    fontStyle: 'italic',
+                                }}>
+                                    "{drawer.contact.first_message}"
+                                </div>
+                            </div>
+                        )}
+
+                        {/* ── Notes ─────────────────────────────────────────── */}
+                        <div style={{ padding: '20px 24px 0' }}>
+                            <SectionTitle icon={<span>📝</span>} title="Notlar" />
+                            <TextArea
+                                value={drawer.notes}
+                                onChange={e => setDrawer(prev => ({ ...prev, notes: e.target.value }))}
+                                onBlur={saveNotes}
+                                placeholder="Not ekle… (kaydetmek için alanın dışına tıkla)"
+                                autoSize={{ minRows: 3, maxRows: 6 }}
+                                style={{
+                                    background: '#28292a',
+                                    border: '1px solid var(--border-color)',
+                                    borderRadius: 12,
+                                    color: 'var(--text-main)',
+                                    fontSize: 13,
+                                    resize: 'none',
+                                }}
+                            />
+                            {drawer.savingNotes && (
+                                <Text style={{ fontSize: 11, color: '#64748b', marginTop: 4, display: 'block' }}>
+                                    Kaydediliyor…
+                                </Text>
+                            )}
+                        </div>
+
+                        {/* ── Conversation History ───────────────────────────── */}
+                        <div style={{ padding: '20px 24px 0' }}>
+                            <SectionTitle icon={<MessageOutlined />} title="Konuşma Geçmişi" />
+                            <div style={{
+                                background: '#28292a',
+                                borderRadius: 12,
+                                border: '1px solid var(--border-color)',
+                                minHeight: 160,
+                                maxHeight: 320,
+                                overflowY: 'auto',
+                                padding: '12px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 8,
+                            }}>
+                                {drawer.loadingMessages ? (
+                                    <div style={{ textAlign: 'center', padding: 40 }}>
+                                        <Spin size="small" />
+                                        <div style={{ color: '#64748b', fontSize: 12, marginTop: 8 }}>Mesajlar yükleniyor…</div>
+                                    </div>
+                                ) : drawer.messages.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: 40, color: '#64748b', fontSize: 13 }}>
+                                        Henüz konuşma yok
+                                    </div>
+                                ) : (
+                                    drawer.messages.map(msg => (
+                                        <ChatBubble key={msg.id} message={msg} />
+                                    ))
+                                )}
+                                <div ref={chatBottomRef} />
+                            </div>
+                        </div>
+
+                        {/* ── Quick Actions ─────────────────────────────────── */}
+                        <div style={{ padding: '20px 24px 24px' }}>
+                            <SectionTitle icon={<span>⚡</span>} title="Hızlı İşlemler" />
+                            <div style={{
+                                background: '#28292a',
+                                borderRadius: 12,
+                                border: '1px solid var(--border-color)',
+                                padding: '16px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 14,
+                            }}>
+                                {/* Change Stage */}
+                                <div>
+                                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                                        Pipeline Aşaması Değiştir
+                                    </Text>
+                                    <Select
+                                        value={drawer.contact.stage}
+                                        onChange={changeStage}
+                                        style={{ width: '100%' }}
+                                        popupMatchSelectWidth={false}
+                                        options={STAGES.map(s => ({ value: s.id, label: s.name }))}
+                                        styles={{
+                                            popup: {
+                                                root: { background: '#28292a', border: '1px solid var(--border-color)' }
+                                            }
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Change Temperature */}
+                                <div>
+                                    <Text style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'block', marginBottom: 6 }}>
+                                        Lead Sıcaklığı Değiştir
+                                    </Text>
+                                    <Select
+                                        value={drawer.contact.lead_temperature ?? undefined}
+                                        onChange={(val: 'HOT' | 'WARM' | 'COLD') => changeTemperature(val)}
+                                        style={{ width: '100%' }}
+                                        placeholder="Sıcaklık seç…"
+                                        options={[
+                                            { value: 'HOT', label: '🔥 Sıcak' },
+                                            { value: 'WARM', label: '⚡ Ilık' },
+                                            { value: 'COLD', label: '❄️ Soğuk' },
+                                        ]}
+                                    />
+                                </div>
+
+                                <Divider style={{ margin: '4px 0', borderColor: 'var(--border-color)' }} />
+
+                                {/* Delete */}
+                                <Popconfirm
+                                    title="Müşteriyi kalıcı sil"
+                                    description="Bu müşteri ve tüm konuşma geçmişi silinecek. Bu işlem geri alınamaz."
+                                    onConfirm={() => deleteContact(drawer.contact!.id, drawer.contact!.stage)}
+                                    okText="Sil"
+                                    cancelText="İptal"
+                                    okButtonProps={{ danger: true }}
+                                >
+                                    <Button
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        block
+                                        style={{ borderRadius: 8 }}
+                                    >
+                                        Müşteriyi Sil
+                                    </Button>
+                                </Popconfirm>
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+            </Drawer>
+        </div>
+    );
+}
+
+// ─── Sub-components ────────────────────────────────────────────────────────────
+
+function SectionTitle({ icon, title }: { icon: React.ReactNode; title: string }) {
+    return (
+        <div style={{
+            display: 'flex', alignItems: 'center', gap: 8,
+            marginBottom: 10, color: 'var(--text-secondary)', fontSize: 13, fontWeight: 600
+        }}>
+            {icon}
+            <span style={{ textTransform: 'uppercase', letterSpacing: '0.04em' }}>{title}</span>
+        </div>
+    );
+}
+
+function InfoItem({ label, children, fullWidth }: {
+    label: string;
+    children: React.ReactNode;
+    fullWidth?: boolean;
+}) {
+    return (
+        <div style={{ gridColumn: fullWidth ? 'span 2' : undefined }}>
+            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                {label}
+            </div>
+            <div>{children}</div>
+        </div>
+    );
+}
+
+function ChatBubble({ message }: { message: Message }) {
+    const isAgent = message.sender === 'agent';
+    return (
+        <div style={{
+            display: 'flex',
+            justifyContent: isAgent ? 'flex-end' : 'flex-start',
+        }}>
+            <div style={{
+                maxWidth: '75%',
+                background: isAgent ? 'rgba(59,130,246,0.18)' : '#1a1a1a',
+                border: isAgent ? '1px solid rgba(59,130,246,0.3)' : '1px solid var(--border-color)',
+                borderRadius: isAgent ? '16px 4px 16px 16px' : '4px 16px 16px 16px',
+                padding: '8px 12px',
+            }}>
+                <div style={{ fontSize: 13, color: 'var(--text-main)', lineHeight: 1.5 }}>
+                    {message.content}
+                </div>
+                <div style={{ fontSize: 10, color: '#64748b', marginTop: 4, textAlign: isAgent ? 'right' : 'left' }}>
+                    {dayjs(message.timestamp).format('HH:mm')}
+                    {isAgent && <span style={{ marginLeft: 4, color: '#3b82f6' }}>✓</span>}
+                </div>
+            </div>
         </div>
     );
 }
