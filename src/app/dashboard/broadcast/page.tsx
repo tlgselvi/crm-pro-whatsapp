@@ -56,9 +56,6 @@ export default function BroadcastPage() {
 
         setSending(true);
         try {
-            // In a real app, this would be a background job. 
-            // For MVP, we'll simulate the process and log characters.
-
             // 1. Create Broadcast record
             const { data: broadcast } = await supabase.from('broadcasts').insert({
                 name: values.name,
@@ -68,31 +65,36 @@ export default function BroadcastPage() {
                 filter_config: { manual_selection: true }
             }).select().single();
 
-            // 2. Loop and "send"
-            let successCount = 0;
-            for (const contact of selectedRows) {
-                // In Phase 6, we would call sendWhatsAppMessage here.
-                // For demo/safety, we log to console.
-                // WhatsApp gönderimi Phase 6'da eklenecek
+            // 2. Gercek WhatsApp gonderimi - Phase 6
+            const contactIds = selectedRows.map((c: any) => c.id);
+            const response = await fetch('/api/broadcast/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contactIds,
+                    message: values.content,
+                    campaignName: values.name,
+                }),
+            });
 
-                // Track message in DB
-                await supabase.from('messages').insert({
-                    sender: 'agent',
-                    content: values.content,
-                    platform: 'whatsapp',
-                    is_read: true,
-                    // conversation linking logic would go here
-                });
-                successCount++;
-            }
+            const result = await response.json();
+            const successCount = result.sent || 0;
+            const failCount = result.failed || 0;
 
             // 3. Update status
-            await supabase.from('broadcasts').update({
-                status: 'completed',
-                sent_count: successCount
-            }).eq('id', broadcast.id);
+            if (broadcast?.id) {
+                await supabase.from('broadcasts').update({
+                    status: failCount === 0 ? 'completed' : 'partial',
+                    sent_count: successCount
+                }).eq('id', broadcast.id);
+            }
 
-            msg.success(`${successCount} kişiye mesaj başarıyla iletildi!`);
+            if (failCount === 0) {
+                msg.success(`✅ ${successCount} kişiye WhatsApp mesajı gönderildi!`);
+            } else {
+                msg.warning(`📊 ${successCount} başarılı, ${failCount} başarısız. ${result.errors?.[0] || ''}`);
+            }
+
             setIsModalOpen(false);
             form.resetFields();
             setSelectedRows([]);
