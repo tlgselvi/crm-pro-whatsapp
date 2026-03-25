@@ -25,10 +25,11 @@ const { TextArea } = Input;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const STAGES = [
-    { id: 'new', name: 'Yeni Gelenler', color: '#1890ff' },
-    { id: 'contacted', name: 'İletişim Kuruldu', color: '#52c41a' },
-    { id: 'qualified', name: 'Nitelikli Lead', color: '#faad14' },
-    { id: 'proposal', name: 'Teklif Gönderildi', color: '#722ed1' },
+    { id: 'new_lead', name: 'Yeni Gelenler', color: '#1890ff' },
+    { id: 'first_contact', name: 'İletişim Kuruldu', color: '#52c41a' },
+    { id: 'qualification', name: 'Nitelikli Lead', color: '#faad14' },
+    { id: 'site_visit', name: 'Keşif Randevusu', color: '#13c2c2' },
+    { id: 'offer_sent', name: 'Teklif Gönderildi', color: '#722ed1' },
     { id: 'negotiation', name: 'Pazarlık', color: '#eb2f96' },
     { id: 'won', name: 'Satış Kapatıldı', color: '#52c41a' },
     { id: 'lost', name: 'Kaybedildi', color: '#ff4d4f' },
@@ -134,7 +135,14 @@ export default function PipelinePage() {
 
             const grouped: PipelineData = {};
             STAGES.forEach((s) => { grouped[s.id] = []; });
-            data?.forEach((c) => { if (grouped[c.stage]) grouped[c.stage].push(c); });
+            data?.forEach((c) => {
+                const stageKey = c.pipeline_stage || c.stage || 'new_lead';
+                if (grouped[stageKey]) {
+                    grouped[stageKey].push({ ...c, stage: stageKey });
+                } else {
+                    grouped['new_lead'].push({ ...c, stage: stageKey });
+                }
+            });
             setContacts(grouped);
         } catch (err) {
             console.error('Kişiler alınamadı:', err);
@@ -239,7 +247,7 @@ export default function PipelinePage() {
         try {
             const { error } = await supabase
                 .from('contacts')
-                .update({ stage: newStage, updated_at: new Date().toISOString() })
+                .update({ stage: newStage, pipeline_stage: newStage, updated_at: new Date().toISOString() })
                 .eq('id', drawer.contact.id);
 
             if (error) throw error;
@@ -345,7 +353,7 @@ export default function PipelinePage() {
         try {
             const { error } = await supabase
                 .from('contacts')
-                .update({ stage: newStage })
+                .update({ stage: newStage, pipeline_stage: newStage, updated_at: new Date().toISOString() })
                 .eq('id', draggableId);
 
             if (error) throw error;

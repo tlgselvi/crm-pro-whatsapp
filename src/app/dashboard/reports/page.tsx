@@ -156,8 +156,8 @@ export default function ReportsPage() {
       const thirtyDaysAgo = now.subtract(30, 'day').toISOString();
       const { data: messages, error: msgsError } = await supabase
         .from('messages')
-        .select('created_at')
-        .gte('created_at', thirtyDaysAgo);
+        .select('timestamp')
+        .gte('timestamp', thirtyDaysAgo);
 
       if (msgsError) throw msgsError;
 
@@ -165,7 +165,7 @@ export default function ReportsPage() {
       for (let h = 0; h < 24; h++) hourMap[h] = 0;
 
       (messages || []).forEach((m) => {
-        const hour = dayjs(m.created_at).hour();
+        const hour = dayjs(m.timestamp).hour();
         hourMap[hour]++;
       });
 
